@@ -29,7 +29,9 @@ Open the [website](http://localhost:4321) and [staff inbox](http://localhost:517
 
 The enabled form saves adult/parent name, email, phone number, programme and consent in PostgreSQL. Confirmation emails use a persistent outbox: registrations still save when Resend is unconfigured, and emails remain queued until valid sender credentials are supplied and the API is restarted. A successful registration does not claim email delivery.
 
-Run `pnpm build`, `pnpm test` and `pnpm test:browser` for project checks. `pnpm db:stop` stops the local database while retaining its data. See [Railway deployment](RAILWAY.md) for the three Docker services plus PostgreSQL; no public deployment has been performed.
+Run `pnpm build`, `pnpm test` and `pnpm test:browser` for project checks. `pnpm db:stop` stops the local database while retaining its data.
+
+Railway infrastructure is authored in one [`.railway/railway.ts`](.railway/railway.ts) file for project **thepit**, environment **development**. The existing public-site service is named **website**, while its code remains in `apps/web/site`; `Postgres` also exists, with API and dashboard planned alongside it. See [Railway deployment](RAILWAY.md) for CLI plan/apply and reconciling existing services. A Git push does not apply the infrastructure definition. Secrets stay in Railway through `preserve()` entries; local app `.env` files are not uploaded. No infrastructure apply or public deployment has been performed by this migration.
 
 ## Membership offer
 
@@ -45,6 +47,6 @@ Monday–Friday: kids **6:30–7:30pm**, changeover **7:30–7:45pm**, combined 
 - Review and adopt the constitution with actual officers and independent committee members. Personal appointments and signatures are blank; charity/CASC status is not claimed.
 - Confirm venue, staffing, capacities, age bands, class allocations and opening date before presenting the schedule as committed.
 - Supply the actual operator identity, privacy inbox and correspondence address for the public privacy information.
-- Configure the Railway services and verified Resend sender, then verify real registration and email receipt on the deployed host. Local Docker integration is verified; no deployment or registration application has been performed.
+- Review the Railway IaC plan against the existing `thepit` / `development` environment, apply the intended configuration and configure the verified Resend sender. Then verify real registration and email receipt on the deployed host. Local Docker integration is verified; no live infrastructure apply or registration application has been performed by this work.
 
 The older [master plan](MASTER-PLAN.md) carries a current implementation note and entity correction; its July maktab and launch timeline are historical.

@@ -1,83 +1,76 @@
-# Railway deployment
+# Railway Infrastructure as Code
 
-The repository is a pnpm/Turborepo workspace. It uses the Sajda pattern: one Dockerfile and Railway config per application, with the **repository root as the build context**. The website runs Astro's Node standalone server; the API runs Node/Fastify; the Vite dashboard uses a small Node static server. All images use Node 24 and pnpm 10.32.1 with frozen lockfile installs. Runtime images run as the `node` user.
+The project is configured in one [`.railway/railway.ts`](.railway/railway.ts). It targets Railway project **thepit**, environment **development**, and retains the existing public-site service name **website**. The source code for that service remains in `apps/web/site`. `Postgres` is also an existing service; `api` and `dash` complete the intended application environment.
 
-## Services
+This replaces the three per-service `railway.json` files and the former manual-settings workflow. Railway evaluates IaC through its CLI. **Pushing the file to GitHub does not apply infrastructure changes**; this repository has no infrastructure auto-apply pipeline. Existing application GitHub autodeploys are a separate mechanism. [Railway IaC guide](https://docs.railway.com/infrastructure-as-code)
 
-This workspace is now a **standalone Git repository**, with `package.json` at its root. Use the repository-root settings below when connecting it to Railway.
+## Check, plan and apply
 
-Create a Railway project with a PostgreSQL service named `Postgres`, and three services connected to the dedicated Pit repository:
-
-| Service name | Root Directory | Config File Path |
-| --- | --- | --- |
-| `api` | `/` (repository root) | `/apps/backend/api/railway.json` |
-| `site` | `/` (repository root) | `/apps/web/site/railway.json` |
-| `dash` | `/` (repository root) | `/apps/web/dash/railway.json` |
-
-Only if deploying a different repository that contains this project under a `the pit/` subdirectory, set **Root Directory to `/the pit` for all three services**, and use Config File Paths `/the pit/apps/backend/api/railway.json`, `/the pit/apps/web/site/railway.json` and `/the pit/apps/web/dash/railway.json`. Railway resolves the config-file path from the connected repository independently of Root Directory. The Dockerfile paths already inside these configs stay `apps/...`, relative to the Pit build context. Use the literal space in `the pit`, not `%20`. This alternative does not apply to the standalone repository.
-
-Do not point Root Directory at an individual application: Docker needs the Pit root lockfile and workspace manifest. Each config selects its own Dockerfile. Leave build/start command overrides empty so Docker controls them. All local Docker commands below run from this `the pit/` workspace, regardless of where `.git` lives. No deploy has been performed by adding these files.
-
-Assign public HTTPS domains to the website, dashboard and API. The dashboard calls the public API; the website proxies registration submissions to it over Railway's private network. All servers bind to `0.0.0.0` and respect `PORT`. Set **API `PORT=3000`** for a stable private-service port; website/dashboard can use Railway's assigned port.
-
-## Variables
-
-Development configuration is app-local: `apps/backend/api/.env` contains database, Resend and admin secrets; `apps/web/site/.env` contains website settings; `apps/web/dash/.env` contains its public API URL. The workspace-root `.env` is not loaded. Local `.env` files are ignored by Git and Docker; `.env.example` templates are retained. Add production values in each Railway service's variables UI; do not copy a local `.env` into an image. Turbo hashes each app's own `.env*` files for builds and passes exported API secrets only to API runtime/test tasks.
-
-**API service:**
-
-```dotenv
-PORT=3000
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-ADMIN_API_TOKEN=<a long random secret>
-RESEND_API_KEY=<your Resend API key>
-RESEND_FROM_EMAIL=The Pit Combat Academy <hello@your-verified-domain>
-REPLY_TO_EMAIL=<your monitored inbox>
-PUBLIC_SITE_URL=https://<website-domain>
-DASH_URL=https://<dashboard-domain>
-```
-
-Use a Resend-verified sender domain. Keep `RESEND_API_KEY`, `DATABASE_URL` and `ADMIN_API_TOKEN` on the API service only. Enter the admin token when using the dashboard; it is never a `VITE_*` variable. The configured website/dashboard origins must match their actual HTTPS domains.
-
-**Website service:**
-
-```dotenv
-API_URL=http://${{api.RAILWAY_PRIVATE_DOMAIN}}:3000
-PUBLIC_SITE_URL=https://<website-domain>
-OPERATOR_NAME=<the responsible operator's name>
-PRIVACY_EMAIL=<privacy contact email>
-CORRESPONDENCE_ADDRESS=<operator correspondence address>
-```
-
-`PUBLIC_SITE_URL` is also a public **build-time** Docker argument: Astro pins this exact origin in its trusted host/proxy policy. Set it before the first build and rebuild the website when changing its public domain; keep the runtime value identical. This allows HTTPS requests forwarded by Railway to pass the website's same-origin checks. The remaining website values are runtime configuration. Browser submissions go to its same-origin `/api/registrations` route, which forwards to the API's `/v1/registrations`. The private API address is not shipped to the browser. The operator/privacy fields are optional display details; supply accurate values for public launch.
-
-**Dashboard service:**
-
-```dotenv
-VITE_API_URL=https://<api-public-domain>
-```
-
-`VITE_API_URL` is a public **build-time** value declared as a Docker `ARG`. Redeploy/rebuild the dashboard when changing it. Resend credentials and admin tokens must never be build arguments.
-
-## Deployment and verification
-
-1. Provision PostgreSQL and set variables before deploying the API. Its pre-deploy command runs `node apps/backend/api/dist/migrate.js`; a migration failure stops deployment. Use Railway database backups before later schema changes.
-2. Deploy the API, then site and dashboard. Each service has a `/healthz` check; API health includes a database query. Website/dashboard health only establishes that their HTTP server is running.
-3. Open the website and submit a registration with an inbox you control. Check that email and phone are present in the dashboard and that the confirmation arrives through Resend. Check Resend logs if delivery fails; API/database health does not establish email delivery.
-4. Check keyboard/mobile form handling, dashboard authentication and a refresh on a dashboard route. Verify invalid submissions fail cleanly and repeated submissions do not produce duplicate contacts.
-
-Build each image locally from the repository root after installing dependencies and updating the lockfile:
+Run from this standalone repository root. The pinned Railway SDK and CLI are installed with the workspace dependencies:
 
 ```sh
-docker build -f apps/backend/api/Dockerfile -t pit-api .
-docker build --build-arg PUBLIC_SITE_URL=http://localhost:4321 -f apps/web/site/Dockerfile -t pit-site .
-docker build --build-arg VITE_API_URL=http://localhost:3001 -f apps/web/dash/Dockerfile -t pit-dash .
+pnpm install --frozen-lockfile
+pnpm railway:check
+pnpm exec railway login
+pnpm exec railway link --project thepit --environment development
+pnpm exec railway status
+pnpm railway:plan
 ```
 
-`compose.yaml` is a **local PostgreSQL dependency**, not the Railway deployment definition. `docker compose up -d postgres` exposes it only at `127.0.0.1:55432` with database/user `pit` and development password `pit_dev`. Data persists in `pit_pgdata`; do not use these development credentials in production. The application processes run through the root development scripts.
+`railway:check` validates the definition locally; it does not compare it with Railway. `railway:plan` reads the selected environment and shows proposed changes. The authoring file rejects a different project name or environment. Confirm the status and the plan both target **thepit / development**, not an environment named `dev`.
 
-## References
+On 7 September 2026, the local CLI was authenticated and linked to that environment. Local SDK/type and graph validation passed. The live plan reported **2 additions, 5 changes, 0 deletions**, with **no Postgres changes**. The definition retains the imported Postgres 18 image, existing volume, credentials and placement. These are plan results; the migration has not yet been applied. A new plan is required after further source or live-state changes.
 
-Local verification on 7 September 2026: all three Docker images built from this workspace root with the frozen pnpm lockfile. Temporary containers passed custom-port health checks, API migration, website-to-API registration persistence and retry handling, admin authentication, and dashboard SPA/asset handling against an isolated PostgreSQL database. A production site rebuild with an explicit public domain also passed simulated Railway HTTPS forwarding: matching Host/Origin submitted successfully, hostile Origin was rejected, and native form submission redirected to confirmation. Resend was deliberately unconfigured during these tests, so real email delivery and Railway deployment remain unverified.
+After reviewing the exact plan, apply it with:
 
-The configuration follows Railway's [monorepo guidance](https://docs.railway.com/deployments/monorepo), [Dockerfile documentation](https://docs.railway.com/builds/dockerfiles), [config-as-code reference](https://docs.railway.com/config-as-code/reference) and [variable references](https://docs.railway.com/variables/reference). It adapts the local Sajda API, dashboard and app deployment files without changing that project.
+```sh
+pnpm exec railway config apply
+```
+
+The CLI presents the changes for confirmation. Do not add automatic confirmation flags to this initial migration. Plan output redacts variable values by default; no secret-revealing flags are needed. These commands are documented here for the deployment workflow; no apply was performed by writing this configuration. [CLI configuration reference](https://docs.railway.com/cli/config)
+
+## Reconcile the existing environment
+
+IaC identifies services by their visible Railway names. Keep `website` and `Postgres` matched to the existing services; a different name can imply resource creation rather than updating the intended service. Keep the existing database image, volume and credentials represented in the definition.
+
+The file describes the whole environment: omissions can propose deletions. Before the first apply, compare all existing services, variables, domains and mounted volumes with the file, and carry forward anything that must remain. Investigate unexpected deletes or database replacement before applying. [IaC guide](https://docs.railway.com/infrastructure-as-code), [resource reference](https://docs.railway.com/infrastructure-as-code/reference)
+
+For comparison, `pnpm exec railway config pull --json` obtains the linked state without replacing the authored TypeScript file. Ordinary `config pull` writes an authoring file, so do not overwrite this reviewed definition casually. Leave out `--include-variables`; existing secret values should remain represented by `preserve()`, not copied into source. If a live service still has an old Railway Config File path configured, clear that legacy path before using IaC for it. Deleting the repository JSON alone does not clear a remote setting. [CLI import reference](https://docs.railway.com/cli/config), [migration guide](https://docs.railway.com/infrastructure-as-code)
+
+## Docker services and networking
+
+All application services use GitHub source `pixeldesignuk/thepitcombat`, branch `main`, with **Root Directory `/`** and repository-root Docker build context. The definition selects each Dockerfile explicitly and clears build/start overrides so the image's command runs.
+
+| Railway service | Dockerfile | Runtime |
+| --- | --- | --- |
+| `website` | `apps/web/site/Dockerfile` | Astro standalone Node server |
+| `api` | `apps/backend/api/Dockerfile` | Fastify API and PostgreSQL-backed email outbox |
+| `dash` | `apps/web/dash/Dockerfile` | Built Vite/React app through a Node static server |
+
+The definition sets application `PORT=3000`, one replica, `/healthz`, a 120-second health timeout and on-failure restart with ten retries. API pre-deploy runs `node apps/backend/api/dist/migrate.js`. PostgreSQL remains a separate persistent resource.
+
+The website's server-only `API_URL` uses `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:3000`. The browser posts to the website's same-origin `/api/registrations` endpoint. The dashboard calls the API's **public HTTPS origin**, so website, API and dashboard need their correct public domains. Public domains are not interchangeable with Railway private DNS.
+
+## Values kept on Railway
+
+`preserve()` retains a value already configured on the selected Railway service. It does **not** create a secret, invent a URL or supply a missing value. Supply missing values in Railway before expecting a new service to work. [Preservation semantics](https://docs.railway.com/infrastructure-as-code/reference)
+
+The live import confirmed that `website.PUBLIC_SITE_URL` is not set yet. It must be supplied for the website build. The new API and dashboard also need their preserved admin/email/origin values configured; a clean or non-destructive infrastructure plan does not establish application readiness.
+
+| Service | Required or optional configuration |
+| --- | --- |
+| `website` | `PUBLIC_SITE_URL`: actual website HTTPS origin. Optional accurate `OPERATOR_NAME`, `PRIVACY_EMAIL`, `CORRESPONDENCE_ADDRESS`. |
+| `api` | `DATABASE_URL` references Postgres; `PUBLIC_SITE_URL` references website. Set `DASH_URL` to dashboard HTTPS origin and `ADMIN_API_TOKEN` to a long random secret. Configure `RESEND_API_KEY`, verified `RESEND_FROM_EMAIL` and monitored `REPLY_TO_EMAIL` for email delivery. |
+| `dash` | `VITE_API_URL`: API public HTTPS origin, never an admin token or private DNS URL. |
+
+`PUBLIC_SITE_URL` must exist at website **build time and runtime**: its Docker argument pins Astro's trusted forwarded-host policy. Rebuild when the website domain changes. Dashboard `VITE_API_URL` is also a public Docker build argument; rebuild when it changes. Keep database credentials, admin tokens and Resend keys on the API only, never in frontend build arguments.
+
+Local configuration stays in each app's ignored `.env`; API secrets belong in `apps/backend/api/.env`. IaC does not upload those files. Railway supplies deployed variables independently. The root `.env` is not loaded.
+
+## Deployment verification
+
+After the intended configuration is applied, verify API migration and `/healthz`, then deploy/rebuild the website and dashboard with their public-origin values. Submit controlled contact details, check actual PostgreSQL/dashboard receipt and separately verify Resend delivery. A healthy API or saved registration does not prove an email was delivered.
+
+If logs still show Railpack or “no start command”, inspect the latest plan and applied environment: the affected service must use its Dockerfile and repository root, with old overrides removed. A Git push alone cannot correct unapplied infrastructure settings.
+
+Local verification on 7 September 2026 covered all three Docker images, isolated PostgreSQL persistence, retry handling, dashboard authentication and simulated Railway HTTPS forwarding. Matching Host/Origin succeeded, hostile Origin failed and native submission redirected after saving. Those results do not establish a live Railway deployment or real email delivery. `compose.yaml` remains only the local PostgreSQL dependency; it is not the Railway deployment definition.

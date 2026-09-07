@@ -2,7 +2,9 @@
   "name": "the-pit",
   "private": true,
   "packageManager": "pnpm@10.32.1",
-  "engines": { "node": ">=24.0.0" },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "turbo dev",
     "dev:site": "turbo dev --filter=@pit/site",
@@ -13,7 +15,15 @@
     "test:browser": "pnpm --filter @pit/site test:browser",
     "db:up": "docker compose up -d postgres",
     "db:stop": "docker compose stop postgres",
-    "db:migrate": "pnpm --filter @pit/api migrate"
+    "db:migrate": "pnpm --filter @pit/api migrate",
+    "railway:check": "tsc -p .railway/tsconfig.json && node .railway/check.mjs",
+    "railway:plan": "railway config plan"
   },
-  "devDependencies": { "turbo": "^2.8.0", "prettier": "^3.5.3" }
+  "devDependencies": {
+    "@railway/cli": "5.49.3",
+    "prettier": "^3.5.3",
+    "railway": "3.11.0",
+    "turbo": "^2.8.0",
+    "typescript": "5.9.3"
+  }
 }
