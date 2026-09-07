@@ -1,0 +1,17 @@
+{
+  "name": "The Pit Combat Academy",
+  "location": "Greater Manchester · Oldham / Rochdale",
+  "headline": ["THIS IS", "WHERE", "YOU’RE", "MADE."],
+  "intro": "Wrestling. MMA. Thai boxing. BJJ. A combat academy for kids, teens and adults. Built on respect, discipline and the work you put in.",
+  "disciplines": [
+    { "name": "Wrestling", "detail": "Balance. Control. Takedowns.", "description": "Build the foundations of standing grappling: movement, positioning and control." },
+    { "name": "MMA", "detail": "Bring it all together.", "description": "Connect striking and grappling through the fundamentals of mixed martial arts." },
+    { "name": "Thai boxing", "detail": "Precision under pressure.", "description": "Develop striking technique, footwork and conditioning through Thai boxing." },
+    { "name": "BJJ", "detail": "Think. Position. Progress.", "description": "Learn the positions, escapes and control that underpin Brazilian jiu-jitsu." }
+  ],
+  "audiences": [
+    { "name": "Kids", "description": "A place to build confidence, learn respect and develop the fundamentals." },
+    { "name": "Teens & adults", "description": "Start with the basics. Keep building your skill, fitness and discipline." }
+  ],
+  "programmeOptions": ["Kids", "Teens", "Adults", "More than one / not sure yet"]
+}

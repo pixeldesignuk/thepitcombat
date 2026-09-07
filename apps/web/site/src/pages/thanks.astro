@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+const registered = Astro.url.searchParams.get('registered') === '1';
+---
+<Base title="Registration — The Pit Combat Academy">
+  <main id="main" class="prose wrap thanks">
+    <img src="/brand/mark.svg" alt="" width="96" height="70" />
+    <h1>{registered ? 'THANK YOU.' : 'STAY IN THE LOOP.'}</h1>
+    <p>{registered ? 'Your interest is registered. We’ll be in touch with opening news and class information. Your first session is free.' : 'Register your interest to hear about opening and classes.'}</p>
+    <a class="button button-light" href="/">Back to The Pit</a>
+  </main>
+</Base>

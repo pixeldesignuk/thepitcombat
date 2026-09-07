@@ -1,0 +1,1 @@
+Logo and mark: exact path geometry extracted from brand/brand-guidelines.html (August 2026 v1.1), with existing horizontal lockup viewBox and colours. Fonts: existing embedded Syne 800 and Archivo 400/600 WOFF2, extracted without modification from the same file. No new raster imagery or logo generated.

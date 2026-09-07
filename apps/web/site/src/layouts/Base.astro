@@ -1,0 +1,54 @@
+---
+import '../styles/fonts.css';
+import '../styles/global.css';
+import site from '../data/site.json';
+import { waitlistConfig as waitlist } from '../lib/server-config';
+const { title = `${site.name} — This is where you’re made.`, description = 'Wrestling, MMA, Thai boxing and BJJ for kids, teens and adults in Greater Manchester. Explore our provisional training hours and register your interest.' } = Astro.props;
+---
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#000000" />
+    {!waitlist.enabled && <meta name="robots" content="noindex,nofollow" />}
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="/brand/mark.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/syne-800.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/archivo-400.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <!-- THESIS: A combat academy opening notice with the confidence of its existing identity.
+    OWN-WORLD: Black, bone, sparing red. Syne display, Archivo text, open rules, no card grid.
+    STORY: Meet the academy, understand the four disciplines, check provisional hours, express interest.
+    FIRST VIEWPORT: Left-aligned four-line manifesto at 96px maximum; exact double-chevron on the right; action directly beneath copy. Compact horizontal brand navigation.
+    FORM: Established August identity, approved implementation plan; contract pit-prelaunch-2026. Single chevron clip reveal, reduced-motion fallback, no new raster assets.
+    FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header wrap">
+      <a href="/" class="brand" aria-label="The Pit Combat Academy home">
+        <img src="/brand/logo.svg" alt="The Pit" width="200" height="44" />
+        <span>Combat Academy</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="/#training">Training</a>
+        <a href="/#timetable">Timetable</a>
+        <a href="/#faq">FAQs</a>
+        <a class="nav-cta" href="/#register">Register interest <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10" /></svg></a>
+      </nav>
+    </header>
+    <slot />
+    <footer class="site-footer wrap">
+      <div><a href="/" class="footer-brand">THE PIT</a><p>Respect. Discipline. Family.</p></div>
+      <div class="footer-details">
+        <p>{site.location}</p>
+        {waitlist.operatorName && <p>Operated by {waitlist.operatorName}.</p>}
+        <a href="/privacy/">Privacy notice</a>
+      </div>
+    </footer>
+  </body>
+</html>

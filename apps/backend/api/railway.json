@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "apps/backend/api/Dockerfile"
+  },
+  "deploy": {
+    "preDeployCommand": "node apps/backend/api/dist/migrate.js",
+    "healthcheckPath": "/healthz",
+    "healthcheckTimeout": 120,
+    "numReplicas": 1,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}

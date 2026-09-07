@@ -1,0 +1,143 @@
+<meta charset="utf-8">
+<title>The Pit — Fresh Directions</title>
+<style>
+  :root{--bg:#f4f2ee;--panel:#fff;--ink:#14100f;--muted:#6b6560;--line:#e4dfd7;--red:#E0231F;}
+  :root:not([data-theme="light"]){@media (prefers-color-scheme:dark){--bg:#121110;--panel:#1b1917;--ink:#f2efe9;--muted:#9c948b;--line:#302c28;--red:#ff473f;}}
+  :root[data-theme="dark"]{--bg:#121110;--panel:#1b1917;--ink:#f2efe9;--muted:#9c948b;--line:#302c28;--red:#ff473f;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Helvetica Neue',Arial,system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:52px 28px 90px;}
+  .kick{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--red);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(26px,5vw,40px);margin:0 0 10px;font-weight:800;letter-spacing:-.01em;}
+  .lede{color:var(--muted);max-width:64ch;margin:0 0 8px;font-size:15px;}
+  section{margin-top:56px;}
+  section h2{font-size:20px;margin:0 0 4px;font-weight:800;}
+  section h2 span{color:var(--red);}
+  section p.idea{color:var(--muted);font-size:14px;margin:0 0 18px;max-width:70ch;}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:760px){.pair{grid-template-columns:1fr;}}
+  .tile{border:1px solid var(--line);border-radius:14px;padding:34px 26px;display:flex;align-items:center;justify-content:center;min-height:250px;}
+  .tile svg{width:100%;max-width:520px;height:auto;display:block;}
+  .tile.sq svg{max-width:290px;}
+  .wt{background:#fff;--fg:#161210;--tbg:#ffffff;--ac:#E0231F;}
+  .bk{background:#161210;border-color:#161210;--fg:#f5f2ec;--tbg:#161210;--ac:#E0231F;}
+  footer{margin-top:64px;border-top:1px solid var(--line);padding-top:20px;color:var(--muted);font-size:13px;}
+  text{font-family:'Helvetica Neue',Arial,sans-serif;}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+
+    <!-- D1 · SUNKEN — the word hangs below ground level; the red I breaks the surface -->
+    <symbol id="d1" viewBox="0 0 900 540">
+      <text x="64" y="155" font-size="46" font-weight="900" letter-spacing="7" fill="var(--fg)">THE</text>
+      <!-- thin ground line, split where the I passes through -->
+      <rect x="60"  y="170" width="323" height="45" rx="8" fill="var(--fg)"/>
+      <rect x="492" y="170" width="348" height="45" rx="8" fill="var(--fg)"/>
+      <!-- P -->
+      <rect x="145" y="245" width="85"  height="225" rx="14" fill="var(--fg)"/>
+      <rect x="145" y="245" width="205" height="140" rx="70" fill="var(--fg)"/>
+      <rect x="230" y="281" width="70"  height="68"  rx="34" fill="var(--tbg)"/>
+      <!-- I : red, hanging with the word but breaking up through the surface -->
+      <rect x="395" y="110" width="85" height="360" rx="14" fill="var(--ac)"/>
+      <!-- T -->
+      <rect x="525" y="245" width="230" height="85"  rx="14" fill="var(--fg)"/>
+      <rect x="597" y="245" width="85"  height="225" rx="14" fill="var(--fg)"/>
+    </symbol>
+
+    <!-- D2 · STEP DOWN — the letters descend into the pit, staircase underline -->
+    <symbol id="d2" viewBox="0 0 900 560">
+      <text x="120" y="48" font-size="44" font-weight="900" letter-spacing="7" fill="var(--fg)">THE</text>
+      <!-- P (highest) -->
+      <rect x="120" y="70" width="88"  height="240" rx="14" fill="var(--fg)"/>
+      <rect x="120" y="70" width="210" height="148" rx="74" fill="var(--fg)"/>
+      <rect x="208" y="108" width="66" height="68" rx="33" fill="var(--tbg)"/>
+      <!-- I (mid) -->
+      <rect x="375" y="130" width="88" height="240" rx="14" fill="var(--fg)"/>
+      <!-- T (lowest) -->
+      <rect x="508" y="190" width="240" height="88" rx="14" fill="var(--fg)"/>
+      <rect x="584" y="190" width="88"  height="240" rx="14" fill="var(--fg)"/>
+      <!-- red staircase, treads under each letter, steps in the gaps -->
+      <path d="M110 330 H352 V390 H485 V450 H830" fill="none" stroke="var(--ac)" stroke-width="18"/>
+    </symbol>
+
+    <!-- D3 · THE SLAB — solid plate, knocked-out letters, app-icon-native -->
+    <symbol id="d3" viewBox="0 0 460 460">
+      <rect x="30" y="30" width="400" height="400" rx="72" fill="var(--fg)"/>
+      <text x="70" y="152" font-size="48" font-weight="900" letter-spacing="9" fill="var(--tbg)">THE</text>
+      <!-- P -->
+      <rect x="70" y="205" width="52"  height="140" rx="10" fill="var(--tbg)"/>
+      <rect x="70" y="205" width="125" height="87"  rx="43" fill="var(--tbg)"/>
+      <rect x="122" y="227" width="40" height="40" rx="20" fill="var(--fg)"/>
+      <!-- I in red -->
+      <rect x="223" y="205" width="52" height="140" rx="10" fill="var(--ac)"/>
+      <!-- T -->
+      <rect x="303" y="205" width="112" height="52" rx="10" fill="var(--tbg)"/>
+      <rect x="333" y="205" width="52" height="140" rx="10" fill="var(--tbg)"/>
+    </symbol>
+
+    <!-- D4 · THE DROP — your moodboard's DNA, one letter fallen into the pit -->
+    <symbol id="d4" viewBox="0 0 900 520">
+      <text x="100" y="88" transform="rotate(-8 100 88)" font-size="52" font-weight="900" font-style="italic" letter-spacing="3" fill="var(--fg)">THE</text>
+      <!-- P -->
+      <rect x="110" y="110" width="100" height="290" rx="16" fill="var(--fg)"/>
+      <rect x="110" y="110" width="250" height="175" rx="87" fill="var(--fg)"/>
+      <rect x="210" y="155" width="85"  height="85"  rx="42" fill="var(--tbg)"/>
+      <!-- I : dropped below the baseline, red -->
+      <rect x="405" y="180" width="100" height="290" rx="16" fill="var(--ac)"/>
+      <!-- T -->
+      <rect x="550" y="110" width="280" height="100" rx="16" fill="var(--fg)"/>
+      <rect x="640" y="110" width="100" height="290" rx="16" fill="var(--fg)"/>
+      <text x="845" y="140" font-size="36" font-weight="700" fill="var(--fg)">®</text>
+    </symbol>
+
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <p class="kick">The Pit · fresh start · hand-built comps</p>
+    <h1>Four ideas, not four decorations</h1>
+    <p class="lede">Round 1's AI batch was the genre's centre of mass — binned. These four are drawn by hand around actual concepts of a <b>pit</b>. They're direction sketches, not finished letterforms: pick the territory and the winner gets properly crafted.</p>
+  </header>
+
+  <section>
+    <h2>D1 · <span>Sunken</span></h2>
+    <p class="idea">The word hangs <b>below ground level</b> — the line is the floor everyone else stands on; THE PIT lives underneath it. The red I is the only letter breaking the surface: <b>the way in, and the way up</b>.</p>
+    <div class="pair">
+      <div class="tile wt"><svg><use href="#d1"/></svg></div>
+      <div class="tile bk"><svg><use href="#d1"/></svg></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>D2 · <span>Step Down</span></h2>
+    <p class="idea">P · I · T each sit one step lower — the word itself <b>descends</b>. The red staircase is the pit's edge. (Flip it and it's the kid-to-competitor climb — same mark, both stories.)</p>
+    <div class="pair">
+      <div class="tile wt"><svg><use href="#d2"/></svg></div>
+      <div class="tile bk"><svg><use href="#d2"/></svg></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>D3 · <span>The Slab</span></h2>
+    <p class="idea">One solid plate — the mat, the block, the badge. Letters knocked out of the mass, red I burning through. Born as an <b>app icon / patch / mat stamp</b>; the wordmark version extends the same letterforms.</p>
+    <div class="pair">
+      <div class="tile wt sq"><svg><use href="#d3"/></svg></div>
+      <div class="tile bk sq"><svg><use href="#d3"/></svg></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>D4 · <span>The Drop</span></h2>
+    <p class="idea">Closest to your CLUB reference: chunky rounded logotype, angled THE tucked in, ® for legitimacy — but with one move that makes it ours: <b>the I has fallen into the pit</b>, dropped and red.</p>
+    <div class="pair">
+      <div class="tile wt"><svg><use href="#d4"/></svg></div>
+      <div class="tile bk"><svg><use href="#d4"/></svg></div>
+    </div>
+  </section>
+
+  <footer>
+    Hand-built SVG comps · black #161210 · red #E0231F · letterforms are placeholders for the chosen direction's proper draw.
+  </footer>
+</div>

@@ -1,0 +1,49 @@
+---
+import questions from '../data/faq.json';
+---
+
+<section id="faq" class="faq wrap" aria-labelledby="faq-heading">
+  <div class="section-heading">
+    <h2 id="faq-heading">BEFORE YOU<br />STEP IN.</h2>
+    <p>Frequently asked questions about training at The Pit.</p>
+  </div>
+  <div class="faq-list">
+    {questions.map(({ question, answer }) => (
+      <details class="faq-item">
+        <summary>
+          <span>{question}</span>
+          <svg class="faq-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h14M12 5v14" />
+          </svg>
+        </summary>
+        <p>{answer}</p>
+      </details>
+    ))}
+  </div>
+</section>
+
+<style>
+  .faq { padding-block: 100px; }
+  .faq-list { border-top: 1px solid var(--rule); }
+  .faq-item { border-bottom: 1px solid var(--rule); }
+  .faq-item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-block: 24px;
+    font: 600 18px/1.6 var(--body);
+    cursor: pointer;
+    list-style: none;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary:hover { text-decoration: underline; text-underline-offset: .25em; }
+  .faq-icon { transition: transform .2s ease; }
+  .faq-item[open] .faq-icon { transform: rotate(45deg); }
+  .faq-item > p { padding: 0 48px 24px 0; color: var(--muted); }
+  @media (max-width: 700px) {
+    .faq { padding-block: 60px; }
+    .faq-item summary { font-size: 16px; }
+    .faq-item > p { padding-right: 0; font-size: 14px; }
+  }
+</style>

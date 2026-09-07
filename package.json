@@ -1,0 +1,19 @@
+{
+  "name": "the-pit",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:site": "turbo dev --filter=@pit/site",
+    "dev:api": "turbo dev --filter=@pit/api",
+    "dev:dash": "turbo dev --filter=@pit/dash",
+    "build": "turbo build",
+    "test": "turbo test",
+    "test:browser": "pnpm --filter @pit/site test:browser",
+    "db:up": "docker compose up -d postgres",
+    "db:stop": "docker compose stop postgres",
+    "db:migrate": "pnpm --filter @pit/api migrate"
+  },
+  "devDependencies": { "turbo": "^2.8.0", "prettier": "^3.5.3" }
+}

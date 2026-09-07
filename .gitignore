@@ -1,0 +1,21 @@
+.skill-archive/
+.env
+
+# Monorepo build output and local credentials
+**/node_modules/
+**/dist/
+**/.turbo/
+**/.astro/
+**/.env
+**/.env.*
+!**/.env.example
+**/test-results/
+**/playwright-report/
+.impeccable/hook.cache.json
+
+# Local browser tooling and macOS metadata
+**/.playwright-mcp/
+**/.DS_Store
+
+# Raw footage stays local; it is not part of the application repository.
+/video/

@@ -1,0 +1,27 @@
+---
+import Base from '../layouts/Base.astro';
+import { waitlistConfig as config } from '../lib/server-config';
+---
+<Base title="Privacy notice — The Pit Combat Academy" description="How The Pit Combat Academy handles your interest registration details.">
+  <main id="main" class="prose wrap">
+    <a href="/#register" class="text-link">Back to registration</a>
+    <h1>PRIVACY NOTICE</h1>
+    <h2>Who is responsible</h2>
+    <p>{config.operatorName || 'The Pit Combat Academy team'} manages the information you submit to the academy.</p>
+    {config.privacyEmail && <p>Contact: <a href={`mailto:${config.privacyEmail}`}>{config.privacyEmail}</a></p>}
+    {config.correspondenceAddress && <p>Correspondence address: {config.correspondenceAddress}</p>}
+    <h2>What we collect and why</h2>
+    <p>We collect an adult or parent/guardian’s name, email address, phone number, programme interest and agreement to receive opening updates. We use this to contact you by email, phone or text about academy opening and classes. Please do not submit children’s names, dates of birth or medical information.</p>
+    <p>Our lawful basis for these updates is your consent. Registering interest does not reserve a place or enrol anyone in a class.</p>
+    <h2>Storage and access</h2>
+    <p>We store registrations in the academy’s database. Authorised academy organisers can access them to manage your enquiry. We do not sell your details.</p>
+    <p>Our live hosting provider is Railway, and Resend processes confirmation emails when email delivery is configured. These providers may process information outside the UK. See <a href="https://railway.com/legal/privacy">Railway’s privacy information</a> and <a href="https://resend.com/legal/privacy-policy">Resend’s privacy information</a>.</p>
+    <h2>How long we keep it</h2>
+    <p>We will remove waitlist details when no longer needed and no later than 12 months after submission, unless you separately enrol and are given a new privacy notice. You can ask to leave the waitlist sooner. Any necessary record of a withdrawn consent will be limited to what is needed to honour your request.</p>
+    <h2>Your choices and rights</h2>
+    <p>You may withdraw consent at any time by replying to an academy update or contacting the academy directly. This does not affect earlier lawful processing. You can request access, correction, deletion or restriction of your information, and portability where applicable.</p>
+    <p>If you have a concern, contact us first. You can also complain to the <a href="https://ico.org.uk/make-a-complaint/">Information Commissioner’s Office</a>.</p>
+    <h2>Website use</h2>
+    <p>This site adds no advertising or analytics cookies and loads its fonts locally. Our hosting provider may process technical request information, including IP addresses, to serve and protect the website.</p>
+  </main>
+</Base>

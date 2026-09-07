@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_USER: pit
+      POSTGRES_PASSWORD: pit_dev
+      POSTGRES_DB: pit
+    volumes:
+      - pit_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pit -d pit"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pit_pgdata:

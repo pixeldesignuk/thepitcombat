@@ -1,0 +1,136 @@
+---
+import Base from '../layouts/Base.astro';
+import site from '../data/site.json';
+import timetable from '../../../../../operations/timetable.json';
+import { formatTime as time, groupWeekdays } from '../lib/schedule.mjs';
+import Faq from '../components/Faq.astro';
+import { randomUUID } from 'node:crypto';
+const submissionId = randomUUID();
+const registrationError = Astro.url.searchParams.get('registration') === 'error';
+const weekdayGroups = groupWeekdays(timetable.days);
+const weekends = timetable.days.filter(day => day.kind === 'weekend');
+---
+<Base>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-heading">
+      <div class="hero-copy">
+        <h1 id="hero-heading">{site.headline.map(line => <span>{line}</span>)}</h1>
+        <p class="hero-intro">{site.intro}</p>
+        <a class="button button-light" href="#register">Register your interest <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        <p class="hero-note">Your first session is free. Opening details coming soon.</p>
+      </div>
+      <div class="hero-symbol" aria-hidden="true">
+        <img src="/brand/mark.svg" alt="" width="488" height="357" />
+        <span>DISCIPLINE FIRST.<br />EVERYTHING ELSE FOLLOWS.</span>
+      </div>
+      <div class="hero-foot"><span>{site.location}</span><span>Kids · Teens · Adults</span></div>
+    </section>
+
+    <section id="training" class="training wrap" aria-labelledby="training-heading">
+      <div class="section-heading"><h2 id="training-heading">FOUR DISCIPLINES.<br />ONE ACADEMY.</h2><p>From your first session to the work that comes next. Learn the fundamentals. Keep showing up.</p></div>
+      <div class="discipline-list">
+        {site.disciplines.map(discipline => <details class="discipline">
+          <summary><h3>{discipline.name}</h3><span class="discipline-detail">{discipline.detail}</span><span class="expand" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5v14" /></svg></span></summary>
+          <p>{discipline.description}</p>
+        </details>)}
+      </div>
+      <div class="audiences">{site.audiences.map(audience => <div><h3>{audience.name}</h3><p>{audience.description}</p></div>)}</div>
+    </section>
+
+    <section id="timetable" class="timetable-section" aria-labelledby="timetable-heading">
+      <div class="wrap">
+        <div class="section-heading"><h2 id="timetable-heading">MAKE TIME.<br />MAKE PROGRESS.</h2><div><p class="status-label">Provisional timetable</p><p>Our starting framework. Classes, age bands and discipline allocations are still being worked out.</p></div></div>
+        <div class="schedule">
+          {weekdayGroups.map(group => <div class="schedule-weekdays">
+            <h3>{group.label}</h3>
+            <dl>{group.classes.map(session => <div><dt>{session.label}</dt><dd><time datetime={session.start}>{time(session.start)}</time><span>—</span><time datetime={session.end}>{time(session.end)}</time></dd></div>)}</dl>
+            <p class="schedule-note">Changeover between groups. Teaching finishes at {time(group.classes.at(-1)!.end)}.</p>
+          </div>)}
+          <div class="schedule-weekend">
+            <h3>Weekends</h3>
+            <dl>{weekends.map(day => <div><dt>{day.day}</dt><dd>From <time datetime={day.sessions[0].start}>{time(day.sessions[0].start)}</time></dd></div>)}</dl>
+            <p class="schedule-note">Weekend classes and finish times to be confirmed.</p>
+          </div>
+        </div>
+        <div class="schedule-bottom"><p>Wrestling · MMA · Thai boxing · BJJ<br />No discipline is assigned to a day yet.</p><a class="text-link" href="/downloads/timetable.html" target="_blank" rel="noopener">View printable timetable <span class="sr-only">(opens in a new tab)</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10" /></svg></a></div>
+      </div>
+    </section>
+
+    <Faq />
+
+    <section id="register" class="register wrap" aria-labelledby="register-heading">
+      <div class="register-copy"><h2 id="register-heading">YOUR NEXT<br />CHAPTER<br />STARTS HERE.</h2><p>Leave your details for opening news and class information. No payment. No commitment.</p><p class="muted">For a child or teen, a parent or guardian should complete the form using their own details.</p></div>
+      <div class="form-panel">
+        {registrationError && <p class="preview-notice" role="alert">We couldn’t save your registration. Please check your details and try again.</p>}
+        <form name="pit-waitlist" method="POST" action="/api/registrations">
+          <input type="hidden" name="submissionId" value={submissionId} />
+          <p hidden><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off" /></label></p>
+          <fieldset>
+            <legend class="sr-only">Register your interest</legend>
+            <label for="name">Your name <span>(adult or parent/guardian)</span></label>
+            <input id="name" name="name" autocomplete="name" minlength="2" maxlength="100" required />
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required />
+            <label for="phone">Phone number</label>
+            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" pattern="\+?[0-9\s\(\).\-]{8,30}" title="Enter a phone number; include the country code if outside the UK." aria-describedby="phone-hint" required />
+            <p id="phone-hint" class="form-privacy">Include the country code if outside the UK.</p>
+            <label for="programme">Who is interested in training?</label>
+            <select id="programme" name="programme" required><option value="" disabled selected>Select a group</option>{site.programmeOptions.map(option => <option value={option}>{option}</option>)}</select>
+            <label class="consent"><input type="checkbox" name="consent" value="opening-updates-email-phone" required /><span>I’d like opening news and class information by email, phone or text. I can withdraw at any time.</span></label>
+            <p class="form-privacy">We’ll use these details for academy opening updates. Read our <a href="/privacy/">privacy notice</a>.</p>
+            <button class="button button-light" type="submit">Register interest <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></button>
+          </fieldset>
+          <p id="form-status" role="status" aria-live="polite" tabindex="-1"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script>
+    import { encodeSubmission } from '../lib/waitlist.mjs';
+    const form = document.querySelector<HTMLFormElement>('form[name="pit-waitlist"]');
+    const status = document.querySelector<HTMLParagraphElement>('#form-status');
+    const button = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (form && status && button) {
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (button.disabled || !form.reportValidity()) return;
+        const original = button.innerHTML;
+        const body = encodeSubmission(new FormData(form));
+        button.disabled = true;
+        button.textContent = 'Sending…';
+        form.setAttribute('aria-busy', 'true');
+        status.textContent = '';
+        let rejectionMessage = '';
+        try {
+          const response = await fetch(form.action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+            body,
+            signal: AbortSignal.timeout(15000),
+          });
+          const result = await response.json();
+          if (!response.ok || result.ok !== true) {
+            rejectionMessage = typeof result.message === 'string' ? result.message : 'Please check your details and try again.';
+            throw new Error('Submission rejected');
+          }
+          form.reset();
+          const id = form.querySelector<HTMLInputElement>('[name="submissionId"]');
+          if (id) { id.value = crypto.randomUUID(); id.defaultValue = id.value; }
+          status.textContent = 'Thank you. Your interest has been registered. We’ll be in touch with opening and class information.';
+          status.dataset.state = 'success';
+          status.focus();
+        } catch {
+          status.textContent = rejectionMessage
+            ? `${rejectionMessage} Your details are still in the form.`
+            : 'We couldn’t confirm your registration. Please check your connection and try again. Your details are still in the form.';
+          status.dataset.state = 'error';
+          status.focus();
+        } finally {
+          button.disabled = false;
+          button.innerHTML = original;
+          form.removeAttribute('aria-busy');
+        }
+      });
+    }
+  </script>
+</Base>

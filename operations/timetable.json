@@ -1,0 +1,194 @@
+{
+  "title": "Provisional weekly timetable",
+  "status": "provisional",
+  "notice": "A high-level planning skeleton. Days, sessions and teaching arrangements remain subject to confirmation.",
+  "disciplines": [
+    "Wrestling",
+    "MMA",
+    "Thai boxing",
+    "BJJ"
+  ],
+  "days": [
+    {
+      "day": "Monday",
+      "kind": "weekday",
+      "sessions": [
+        {
+          "label": "Kids",
+          "start": "18:30",
+          "end": "19:30",
+          "kind": "class"
+        },
+        {
+          "label": "Changeover",
+          "start": "19:30",
+          "end": "19:45",
+          "kind": "changeover"
+        },
+        {
+          "label": "Teens & adults",
+          "start": "19:45",
+          "end": "21:15",
+          "kind": "class"
+        },
+        {
+          "label": "Outside teaching time",
+          "start": "21:15",
+          "end": "21:30",
+          "kind": "non-teaching"
+        }
+      ]
+    },
+    {
+      "day": "Tuesday",
+      "kind": "weekday",
+      "sessions": [
+        {
+          "label": "Kids",
+          "start": "18:30",
+          "end": "19:30",
+          "kind": "class"
+        },
+        {
+          "label": "Changeover",
+          "start": "19:30",
+          "end": "19:45",
+          "kind": "changeover"
+        },
+        {
+          "label": "Teens & adults",
+          "start": "19:45",
+          "end": "21:15",
+          "kind": "class"
+        },
+        {
+          "label": "Outside teaching time",
+          "start": "21:15",
+          "end": "21:30",
+          "kind": "non-teaching"
+        }
+      ]
+    },
+    {
+      "day": "Wednesday",
+      "kind": "weekday",
+      "sessions": [
+        {
+          "label": "Kids",
+          "start": "18:30",
+          "end": "19:30",
+          "kind": "class"
+        },
+        {
+          "label": "Changeover",
+          "start": "19:30",
+          "end": "19:45",
+          "kind": "changeover"
+        },
+        {
+          "label": "Teens & adults",
+          "start": "19:45",
+          "end": "21:15",
+          "kind": "class"
+        },
+        {
+          "label": "Outside teaching time",
+          "start": "21:15",
+          "end": "21:30",
+          "kind": "non-teaching"
+        }
+      ]
+    },
+    {
+      "day": "Thursday",
+      "kind": "weekday",
+      "sessions": [
+        {
+          "label": "Kids",
+          "start": "18:30",
+          "end": "19:30",
+          "kind": "class"
+        },
+        {
+          "label": "Changeover",
+          "start": "19:30",
+          "end": "19:45",
+          "kind": "changeover"
+        },
+        {
+          "label": "Teens & adults",
+          "start": "19:45",
+          "end": "21:15",
+          "kind": "class"
+        },
+        {
+          "label": "Outside teaching time",
+          "start": "21:15",
+          "end": "21:30",
+          "kind": "non-teaching"
+        }
+      ]
+    },
+    {
+      "day": "Friday",
+      "kind": "weekday",
+      "sessions": [
+        {
+          "label": "Kids",
+          "start": "18:30",
+          "end": "19:30",
+          "kind": "class"
+        },
+        {
+          "label": "Changeover",
+          "start": "19:30",
+          "end": "19:45",
+          "kind": "changeover"
+        },
+        {
+          "label": "Teens & adults",
+          "start": "19:45",
+          "end": "21:15",
+          "kind": "class"
+        },
+        {
+          "label": "Outside teaching time",
+          "start": "21:15",
+          "end": "21:30",
+          "kind": "non-teaching"
+        }
+      ]
+    },
+    {
+      "day": "Saturday",
+      "kind": "weekend",
+      "sessions": [
+        {
+          "label": "Classes to be confirmed",
+          "start": "10:30",
+          "end": null,
+          "kind": "unconfirmed"
+        }
+      ]
+    },
+    {
+      "day": "Sunday",
+      "kind": "weekend",
+      "sessions": [
+        {
+          "label": "Classes to be confirmed",
+          "start": "10:30",
+          "end": null,
+          "kind": "unconfirmed"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Disciplines have not been allocated to days.",
+    "Kids and teens/adults are provisional audience groups; exact age bands are to be confirmed.",
+    "The 19:30\u201319:45 changeover and 21:15\u201321:30 period are outside teaching time.",
+    "Saturday and Sunday begin at 10:30; classes and end times are to be confirmed.",
+    "Coaches, class capacities and booking arrangements are to be confirmed."
+  ]
+}
