@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile --prod --filter @pit/api...
 
 FROM node:24-slim AS runtime
 WORKDIR /app
-ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
+ENV NODE_ENV=production HOST=:: PORT=3000
 COPY --from=production-dependencies /app/node_modules ./node_modules
 COPY --from=production-dependencies /app/apps/backend/api/node_modules ./apps/backend/api/node_modules
 COPY --from=build /app/apps/backend/api/package.json ./apps/backend/api/package.json

@@ -18,11 +18,26 @@ test('PostgreSQL commits registrations and outbox together, survives a new conne
     const outcomes = await Promise.all([store.save(input), store.save(input)]);
     assert.deepEqual(outcomes.sort(), ['created', 'existing']);
     assert.equal(await store.save({ ...input, name: 'Different Adult' }), 'conflict');
-    const records = await createStore(secondPool).list() as { emailStatus: string; email: string }[];
+    const records = (await createStore(secondPool).listInterest({ page: 1, pageSize: 25, q: '' })).items as { emailStatus: string; email: string }[];
     assert.equal(records.length, 1);
     assert.equal(records[0].email, input.email);
     assert.equal(records[0].emailStatus, 'pending');
     assert.equal((await pool.query('SELECT * FROM registration_email_outbox')).rowCount, 1);
+    const initial = await store.getInterest(input.submissionId);
+    assert.equal(initial?.status, 'new');
+    assert.equal(initial?.staffNote, '');
+    assert.ok(initial?.updatedAt);
+    const updated = await store.updateInterest(input.submissionId, { status: 'follow_up', staffNote: 'Called; follow up Tuesday', email: 'changed@example.com' }, 'staff-1');
+    assert.equal(updated?.status, 'follow_up');
+    assert.equal(updated?.staffNote, 'Called; follow up Tuesday');
+    assert.equal(updated?.email, 'changed@example.com');
+    assert.equal((await pool.query('SELECT updated_by FROM registrations WHERE id=$1', [input.submissionId])).rows[0].updated_by, 'staff-1');
+    assert.notEqual(updated?.updatedAt, undefined);
+    const searched = await store.listInterest({ page: 1, pageSize: 25, q: 'changed@example.com', status: 'follow_up' });
+    assert.equal(searched.total, 1);
+    assert.equal(searched.items[0].id, input.submissionId);
+    const literalWildcards = await store.listInterest({ page: 1, pageSize: 25, q: '%_', });
+    assert.equal(literalWildcards.total, 0);
     // A queue failure must roll back the registration as well.
     await pool.query('ALTER TABLE registration_email_outbox ADD CONSTRAINT force_failure CHECK (attempts < 0) NOT VALID');
     const failedId = randomUUID();

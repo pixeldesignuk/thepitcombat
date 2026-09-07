@@ -22,8 +22,7 @@
         "dist/**"
       ],
       "env": [
-        "PUBLIC_SITE_URL",
-        "VITE_API_URL"
+        "PUBLIC_SITE_URL"
       ]
     },
     "dev": {
@@ -32,10 +31,12 @@
       "passThroughEnv": [
         "API_URL",
         "PUBLIC_SITE_URL",
-        "VITE_API_URL",
         "OPERATOR_NAME",
         "PRIVACY_EMAIL",
-        "CORRESPONDENCE_ADDRESS"
+        "CORRESPONDENCE_ADDRESS",
+        "CONSOLE_URL",
+        "API_INTERNAL_URL",
+        "AUTH_INTERNAL_URL"
       ]
     },
     "test": {
@@ -46,10 +47,12 @@
       "passThroughEnv": [
         "API_URL",
         "PUBLIC_SITE_URL",
-        "VITE_API_URL",
         "OPERATOR_NAME",
         "PRIVACY_EMAIL",
-        "CORRESPONDENCE_ADDRESS"
+        "CORRESPONDENCE_ADDRESS",
+        "CONSOLE_URL",
+        "API_INTERNAL_URL",
+        "AUTH_INTERNAL_URL"
       ]
     },
     "start": {
@@ -58,10 +61,12 @@
       "passThroughEnv": [
         "API_URL",
         "PUBLIC_SITE_URL",
-        "VITE_API_URL",
         "OPERATOR_NAME",
         "PRIVACY_EMAIL",
-        "CORRESPONDENCE_ADDRESS"
+        "CORRESPONDENCE_ADDRESS",
+        "CONSOLE_URL",
+        "API_INTERNAL_URL",
+        "AUTH_INTERNAL_URL"
       ]
     },
     "@pit/api#dev": {
@@ -70,12 +75,12 @@
       "passThroughEnv": [
         "DATABASE_URL",
         "API_PORT",
-        "ADMIN_API_TOKEN",
         "RESEND_API_KEY",
         "RESEND_FROM_EMAIL",
         "REPLY_TO_EMAIL",
         "PUBLIC_SITE_URL",
-        "DASH_URL"
+        "DASH_URL",
+        "AUTH_INTERNAL_URL"
       ]
     },
     "@pit/api#test": {
@@ -86,13 +91,13 @@
       "passThroughEnv": [
         "DATABASE_URL",
         "API_PORT",
-        "ADMIN_API_TOKEN",
         "RESEND_API_KEY",
         "RESEND_FROM_EMAIL",
         "REPLY_TO_EMAIL",
         "PUBLIC_SITE_URL",
         "DASH_URL",
-        "TEST_DATABASE_URL"
+        "TEST_DATABASE_URL",
+        "AUTH_INTERNAL_URL"
       ]
     },
     "@pit/api#start": {
@@ -101,12 +106,69 @@
       "passThroughEnv": [
         "DATABASE_URL",
         "API_PORT",
-        "ADMIN_API_TOKEN",
         "RESEND_API_KEY",
         "RESEND_FROM_EMAIL",
         "REPLY_TO_EMAIL",
         "PUBLIC_SITE_URL",
-        "DASH_URL"
+        "DASH_URL",
+        "AUTH_INTERNAL_URL"
+      ]
+    },
+    "@pit/auth#dev": {
+      "persistent": true,
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "AUTH_PORT",
+        "AUTH_DB_SCHEMA",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "AUTH_TRUSTED_ORIGINS",
+        "SEED_ADMIN_EMAIL",
+        "SEED_ADMIN_NAME",
+        "SEED_ADMIN_PASSWORD",
+        "SEED_STAFF_EMAIL",
+        "SEED_STAFF_NAME",
+        "SEED_STAFF_PASSWORD"
+      ]
+    },
+    "@pit/auth#test": {
+      "dependsOn": [
+        "build"
+      ],
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "AUTH_PORT",
+        "AUTH_DB_SCHEMA",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "AUTH_TRUSTED_ORIGINS",
+        "SEED_ADMIN_EMAIL",
+        "SEED_ADMIN_NAME",
+        "SEED_ADMIN_PASSWORD",
+        "SEED_STAFF_EMAIL",
+        "SEED_STAFF_NAME",
+        "SEED_STAFF_PASSWORD",
+        "TEST_DATABASE_URL"
+      ]
+    },
+    "@pit/auth#start": {
+      "persistent": true,
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "AUTH_PORT",
+        "AUTH_DB_SCHEMA",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "AUTH_TRUSTED_ORIGINS",
+        "SEED_ADMIN_EMAIL",
+        "SEED_ADMIN_NAME",
+        "SEED_ADMIN_PASSWORD",
+        "SEED_STAFF_EMAIL",
+        "SEED_STAFF_NAME",
+        "SEED_STAFF_PASSWORD"
       ]
     }
   }

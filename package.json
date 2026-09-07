@@ -17,7 +17,10 @@
     "db:stop": "docker compose stop postgres",
     "db:migrate": "pnpm --filter @pit/api migrate",
     "railway:check": "tsc -p .railway/tsconfig.json && node .railway/check.mjs",
-    "railway:plan": "railway config plan"
+    "railway:plan": "railway config plan",
+    "dev:auth": "turbo dev --filter=@pit/auth",
+    "auth:migrate": "pnpm --filter @pit/auth migrate",
+    "auth:seed": "pnpm --filter @pit/auth seed"
   },
   "devDependencies": {
     "@railway/cli": "5.49.3",

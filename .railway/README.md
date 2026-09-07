@@ -1,6 +1,6 @@
 # The Pit Railway configuration
 
-`railway.ts` is the single infrastructure definition for **thepit / development**. Its guard rejects other projects or environments. The public-site service is `website`; its source directory remains `apps/web/site`. Existing Postgres configuration and its volume are retained; the migration created `api` and `dash`.
+`railway.ts` is the single infrastructure definition for **thepit / development**. Its guard rejects other projects or environments. The public-site service is `website`; its source directory remains `apps/web/site`. Existing Postgres configuration and its volume are retained; the application services are `website`, `api`, `dash` and `auth`.
 
 From the repository root:
 
@@ -21,10 +21,10 @@ pnpm exec railway config apply
 
 The CLI asks for confirmation. A Git push does not apply this file. `preserve()` leaves existing values on Railway; missing secrets or public URLs must be configured there, not committed here. Local app `.env` files are not infrastructure input.
 
-Applied on 7 September 2026: after local SDK/type and graph checks and review of the live plan (**2 additions, 5 changes, 0 deletions**), commit `d50f085` was pushed and `pnpm exec railway config apply --yes` succeeded against **thepit / development**. The website configuration changed and `api`/`dash` were created, with **no Postgres changes**. Post-apply drift verification is separate; rerun the plan after source or live-state changes.
+The initial three-service deployment was verified on 7 September 2026. The console extension adds a private Better Auth service, routes dashboard authentication and API requests through the dashboard server, and applies additive authentication and interest-management migrations. Review the current plan before applying; Postgres and its volume must remain unchanged.
 
-Final verification: after matching Railway's normalized defaults, the live plan reports **no changes**. All three application deployments report **SUCCESS**, using their intended Dockerfiles; API migration/start and website/dashboard startup succeeded. The original Postgres deployment is unchanged.
+The development console uses `https://dev-console.thepitcombat.com` as `dash.CONSOLE_URL`. Auth uses the same HTTPS origin for cookies and origin checks. Its secret and seed account settings are Railway-managed values; local credentials are in the ignored `apps/backend/auth/.env`. Never commit them. The auth service needs no public domain.
 
-Public domains are not assigned yet. Website `PUBLIC_SITE_URL`, API admin/email/dashboard-origin settings and dashboard `VITE_API_URL` still need configuration. Public form operation and real email delivery remain unverified.
+Earlier website mail/admin variables and dashboard `VITE_API_URL` are preserved to avoid deleting manually configured remote values, but the new console does not consume them. Email delivery requires Resend settings on **api**. An admin API token no longer grants console access.
 
-See [the deployment guide](../RAILWAY.md) for domain and variable requirements, safe existing-state imports, Docker networking and verification.
+See [the deployment guide](../RAILWAY.md) for domain and variable requirements, Docker networking and verification.

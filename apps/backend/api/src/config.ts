@@ -11,11 +11,18 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
+const consoleOrigins = [new URL(process.env.DASH_URL || 'http://localhost:5173').origin];
+if (process.env.NODE_ENV !== 'production') {
+  const url = new URL(consoleOrigins[0]);
+  if (url.hostname === 'localhost') { url.hostname = '127.0.0.1'; consoleOrigins.push(url.origin); }
+}
+
 export const settings = {
   port: Number(process.env.PORT || process.env.API_PORT || 3001),
   databaseUrl: process.env.DATABASE_URL || '',
-  adminToken: process.env.ADMIN_API_TOKEN || '',
   origins,
+  consoleOrigins,
+  authInternalUrl: process.env.AUTH_INTERNAL_URL || '',
   resendKey: process.env.RESEND_API_KEY || '',
   resendFrom: process.env.RESEND_FROM_EMAIL || '',
   replyTo: process.env.REPLY_TO_EMAIL || undefined,

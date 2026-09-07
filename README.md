@@ -11,21 +11,23 @@ The academy’s public name remains **The Pit Combat Academy**. The association 
 
 ## Run locally
 
-Use Node 24+, pnpm 10.32.1 and Docker. The Turborepo workspace contains the Astro Node website, Fastify API with PostgreSQL, and Vite/React registration inbox. This is the first part of the custom gym management system; memberships, billing and attendance are future work.
+Use Node 24+, pnpm 10.32.1 and Docker. The Turborepo workspace contains the Astro Node website, Fastify API with PostgreSQL, Better Auth service, and Vite/React staff console. This is the first part of the custom gym management system; memberships, billing and attendance are future work.
 
-Environment files live with each application. Add your `RESEND_API_KEY` **and** `RESEND_FROM_EMAIL` in [`apps/backend/api/.env`](apps/backend/api/.env) using a verified Resend sender; set `REPLY_TO_EMAIL` to a monitored inbox. The API's database settings and random local `ADMIN_API_TOKEN` also live there. Website settings are in `apps/web/site/.env`; the dashboard's public API URL is in `apps/web/dash/.env`. Keep secrets in the API file. All local environment files are excluded from Git and Docker images; safe `.env.example` templates remain available.
+Environment files live with each application. API database and Resend settings belong in `apps/backend/api/.env`; Better Auth signing and seeded-user credentials belong in `apps/backend/auth/.env`. Website settings are in `apps/web/site/.env`; the console origin and private proxy targets are in `apps/web/dash/.env`. These files are excluded from Git and Docker images.
 
-For a fresh clone, copy each app's `.env.example` to `.env` in the same directory if the destination does not exist. Set the API's `ADMIN_API_TOKEN` to a newly generated long random secret, and fill in the Resend values. Do not overwrite an existing file or reuse the development token in production. The workspace-root `.env` is not loaded by these apps. Set operator/privacy contact details in the website's environment to accurate values before public launch.
+For a fresh clone, copy each app's `.env.example` to `.env` only if the destination does not exist. Generate a random `BETTER_AUTH_SECRET` and strong seed passwords in the auth file. Add your Resend key, verified sender and monitored reply-to inbox in the API file when ready. Migrations and seeding use the configured database; automated tests use `TEST_DATABASE_URL` and isolated schemas. The workspace-root `.env` is not loaded.
 
 ```sh
 corepack enable
 pnpm install --frozen-lockfile
 pnpm db:up
 pnpm db:migrate
+pnpm auth:migrate
+pnpm auth:seed
 pnpm dev
 ```
 
-Open the [website](http://localhost:4321) and [staff inbox](http://localhost:5173). The API runs on `http://localhost:3001`; local PostgreSQL uses `127.0.0.1:55432`. Enter the local admin token from `apps/backend/api/.env` into the inbox access-key field.
+Open the [website](http://localhost:4321) and [staff inbox](http://localhost:5173). The API runs on `http://localhost:3001`; local PostgreSQL uses `127.0.0.1:55432`. Sign in with the seeded credentials in `apps/backend/auth/.env`.
 
 The enabled form saves adult/parent name, email, phone number, programme and consent in PostgreSQL. Confirmation emails use a persistent outbox: registrations still save when Resend is unconfigured, and emails remain queued until valid sender credentials are supplied and the API is restarted. A successful registration does not claim email delivery.
 

@@ -1,11 +1,34 @@
-# The Pit registration inbox
+# The Pit Console
 
-Private React/TypeScript inbox, served by Vite on port 5173. This is the first admin surface, limited to viewing interest registrations.
+The staff console uses the compact navigation and list/detail layout from AgentOS with The Pit’s black, bone and red identity. It currently manages interest submissions and staff accounts. Memberships, attendance, payments and automated enrolment are later work.
 
-Set `VITE_API_URL` before building to the public API origin. It defaults to `http://localhost:3001` for development. No access key belongs in the environment or build output: enter it in the password field when opening the inbox. The key and fetched registrations stay in page memory and are cleared on lock or reload; no local/session storage is used.
+## Sign in
 
-The inbox reads `GET /v1/admin/registrations` using `Authorization: Bearer <access key>` and expects `{ registrations: [{ id, name, email, phone, programme, createdAt, emailStatus }] }`. The API supplies the latest 200 records, newest first. The filter searches only these loaded records. Received times are displayed in Europe/London time.
+Use email and password. Better Auth runs in `apps/backend/auth`; the old admin access key is no longer accepted. Seeded administrator and staff credentials are in the ignored `apps/backend/auth/.env` file. Seeding creates missing accounts and does not reset existing passwords or re-enable accounts.
 
-Copy this app's `.env.example` to `apps/web/dash/.env` and configure only `VITE_API_URL`. Vite reads that app-local file; it does not load root or backend environment files. Injected Railway build variables take precedence. Run through the root pnpm/Turborepo workspace scripts: `pnpm --filter @pit/dash dev`, `pnpm --filter @pit/dash check` and `pnpm --filter @pit/dash build` target this app. `dist/` is the static production output; the included Node static server serves it for Railway. The real-stack browser suite lives in `apps/web/site/tests/browser` and covers protected access, filtering, refresh, mobile overflow and clearing the inbox.
+Administrators can create staff accounts, change roles, deactivate/reactivate users and reset passwords. Staff can manage interest records. Disabling an account, changing its role or resetting its password revokes its sessions. The last active administrator cannot be removed or demoted.
 
-Fonts and logo are copied from the existing approved academy website assets; no new logo or font artwork is introduced.
+## Local development
+
+From the workspace root:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm db:up
+pnpm db:migrate
+pnpm auth:migrate
+pnpm auth:seed
+pnpm dev
+```
+
+Migrations and seeding use each backend service’s configured `DATABASE_URL`. Check the target before running them. Automated integration tests use a separate `TEST_DATABASE_URL` and isolated schemas.
+
+Open http://localhost:5173. The dashboard’s `.env` holds `CONSOLE_URL`, `API_INTERNAL_URL` and `AUTH_INTERNAL_URL`. Vite proxies `/api` to the API’s `/v1` routes and `/auth` to Better Auth. Browser code never receives upstream addresses or auth secrets.
+
+## Production
+
+The Node server provides the same origin proxy alongside the built Vite app. Set `CONSOLE_URL` to its exact public HTTPS origin, `API_INTERNAL_URL` to the private API address, and `AUTH_INTERNAL_URL` to the private auth address. These are runtime settings; no `VITE_API_URL` is needed. Session cookies are HttpOnly, with Secure enabled on HTTPS. API access is checked against the current auth session and role for every request.
+
+The interest workspace supports search, programme/status filters, pagination, contact edits, follow-up state and staff notes. Closing an interest record does not create or cancel a membership. The public interest form remains an expression of interest, not a class booking.
+
+See the root [Railway guide](../../../RAILWAY.md) for the shared infrastructure definition and deployment workflow.

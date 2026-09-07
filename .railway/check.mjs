@@ -20,6 +20,7 @@ assert.deepEqual(validateGraph({
 
 const expectedApps = new Map([
   ['api', 'apps/backend/api/Dockerfile'],
+  ['auth', 'apps/backend/auth/Dockerfile'],
   ['website', 'apps/web/site/Dockerfile'],
   ['dash', 'apps/web/dash/Dockerfile'],
 ]);
@@ -47,9 +48,14 @@ assert.equal(dbVolume.config.sizeMB, 50000);
 assert.equal(dbVolume.config.region, 'us-east4-eqdc4a');
 assert.equal(db.deploy.requiredMountPath, '/var/lib/postgresql/data');
 assert.ok(Object.values(db.variables).every(value => value.type === 'preserve'));
-for (const key of ['ADMIN_API_TOKEN', 'RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'REPLY_TO_EMAIL']) {
+for (const key of ['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'REPLY_TO_EMAIL']) {
   assert.equal(api.variables[key].type, 'preserve', `${key} must remain Railway-managed`);
 }
+const auth = resources.find(item => item.name === 'auth');
+assert.equal(auth.variables.BETTER_AUTH_SECRET.type, 'preserve');
+assert.equal(auth.variables.SEED_ADMIN_PASSWORD.type, 'preserve');
+assert.ok(!api.variables.ADMIN_API_TOKEN);
+assert.equal(api.variables.AUTH_INTERNAL_URL.value, 'http://${{auth.RAILWAY_PRIVATE_DOMAIN}}:3000');
 for (const environment of ['production', 'dev', undefined]) {
   assert.throws(() => configure(createRailwayContext({ projectName: 'thepit', environment }), project));
 }

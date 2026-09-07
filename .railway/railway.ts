@@ -66,6 +66,13 @@ export default defineRailway((ctx) => {
       OPERATOR_NAME: preserve(),
       PRIVACY_EMAIL: preserve(),
       CORRESPONDENCE_ADDRESS: preserve(),
+      // Retain earlier manually configured values; the website does not consume
+      // these backend settings. Do not remove unrelated remote secrets on apply.
+      ADMIN_API_TOKEN: preserve(),
+      DASH_URL: preserve(),
+      RESEND_API_KEY: preserve(),
+      RESEND_FROM_EMAIL: preserve(),
+      REPLY_TO_EMAIL: preserve(),
     },
   });
 
@@ -78,8 +85,9 @@ export default defineRailway((ctx) => {
       PORT: '3000',
       DATABASE_URL: db.env.DATABASE_URL,
       PUBLIC_SITE_URL: website.env.PUBLIC_SITE_URL,
-      DASH_URL: preserve(),
-      ADMIN_API_TOKEN: preserve(),
+      DASH_URL: '${{dash.CONSOLE_URL}}',
+      AUTH_INTERNAL_URL: 'http://${{auth.RAILWAY_PRIVATE_DOMAIN}}:3000',
+      HOST: '::',
       RESEND_API_KEY: preserve(),
       RESEND_FROM_EMAIL: preserve(),
       REPLY_TO_EMAIL: preserve(),
@@ -93,9 +101,35 @@ export default defineRailway((ctx) => {
     replicas: { 'us-east4-eqdc4a': 1 },
     env: {
       PORT: '3000',
+      CONSOLE_URL: preserve(),
+      API_INTERNAL_URL: 'http://${{api.RAILWAY_PRIVATE_DOMAIN}}:3000',
+      AUTH_INTERNAL_URL: 'http://${{auth.RAILWAY_PRIVATE_DOMAIN}}:3000',
+      // Kept only to avoid deleting an existing remote setting; unused by the console.
       VITE_API_URL: preserve(),
     },
   });
 
-  return project('thepit', { environments: ['development'], resources: [postgresVolume, db, website, api, dash] });
+  const auth = service('auth', {
+    source: source(),
+    build: build('apps/backend/auth/Dockerfile'),
+    deploy: { ...deploy, preDeployCommand: ['node apps/backend/auth/dist/migrate.js && node apps/backend/auth/dist/seed.js'] },
+    replicas: { 'us-east4-eqdc4a': 1 },
+    env: {
+      PORT: '3000',
+      DATABASE_URL: db.env.DATABASE_URL,
+      AUTH_DB_SCHEMA: 'pit_auth',
+      HOST: '::',
+      BETTER_AUTH_URL: '${{dash.CONSOLE_URL}}',
+      AUTH_TRUSTED_ORIGINS: '${{dash.CONSOLE_URL}}',
+      BETTER_AUTH_SECRET: preserve(),
+      SEED_ADMIN_NAME: preserve(),
+      SEED_ADMIN_EMAIL: preserve(),
+      SEED_ADMIN_PASSWORD: preserve(),
+      SEED_STAFF_NAME: preserve(),
+      SEED_STAFF_EMAIL: preserve(),
+      SEED_STAFF_PASSWORD: preserve(),
+    },
+  });
+
+  return project('thepit', { environments: ['development'], resources: [postgresVolume, db, website, api, dash, auth] });
 });

@@ -3,6 +3,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { proxyConsoleRequest } from './proxy.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), 'dist');
 const mime = {
@@ -18,21 +19,33 @@ const mime = {
   '.woff2': 'font/woff2',
 };
 
+const consoleOrigin = process.env.CONSOLE_URL || (process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : '');
+const origins = consoleOrigin ? [new URL(consoleOrigin).origin] : [];
+if (process.env.NODE_ENV !== 'production' && origins.length) {
+  const local = new URL(origins[0]);
+  if (local.hostname === 'localhost') { local.hostname = '127.0.0.1'; origins.push(local.origin); }
+}
+const proxySettings = {
+  origins,
+  authUrl: process.env.AUTH_INTERNAL_URL || (process.env.NODE_ENV !== 'production' ? 'http://localhost:3002' : ''),
+  apiUrl: process.env.API_INTERNAL_URL || (process.env.NODE_ENV !== 'production' ? 'http://localhost:3001' : ''),
+};
+
 const server = createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Cache-Control', 'no-store');
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    res.writeHead(405, { Allow: 'GET, HEAD' }).end();
-    return;
-  }
-
   let pathname;
   try {
     pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   } catch {
     res.writeHead(400).end('Invalid path');
+    return;
+  }
+  if (await proxyConsoleRequest(req, res, pathname, proxySettings)) return;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405, { Allow: 'GET, HEAD' }).end();
     return;
   }
   if (pathname === '/healthz') {

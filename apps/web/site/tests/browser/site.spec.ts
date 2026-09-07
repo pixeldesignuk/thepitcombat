@@ -4,9 +4,37 @@ import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const review = fileURLToPath(new URL('../../../../../.impeccable/review/', import.meta.url));
-const api = 'http://127.0.0.1:3301';
 const dash = 'http://127.0.0.1:5174';
-const headers = { Authorization: 'Bearer browser-test-access-key' };
+const admin = { email: 'admin@thepitcombat.test', password: 'Browser-admin-test-password-2026!' };
+const staff = { email: 'staff@thepitcombat.test', password: 'Browser-staff-test-password-2026!' };
+
+type ConsoleResponse = { status: number; body: unknown };
+
+async function consoleRequest(page: Page, path: string, method = 'GET', body?: unknown): Promise<ConsoleResponse> {
+  return page.evaluate(async ({ path, method, body }) => {
+    const response = await fetch(path, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    return { status: response.status, body: await response.json().catch(() => null) };
+  }, { path, method, body });
+}
+
+async function signIn(page: Page, credentials = admin) {
+  await page.goto(dash);
+  return consoleRequest(page, '/auth/sign-in/email', 'POST', credentials);
+}
+
+async function signInThroughConsole(page: Page, credentials = admin) {
+  await page.goto(dash);
+  await page.locator('#login-email').fill(credentials.email);
+  await page.locator('#login-password').fill(credentials.password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('navigation', { name: 'Console' })).toBeVisible();
+}
 
 async function fill(page: Page, name: string, email: string) {
   await page.locator('#name').fill(name);
@@ -81,9 +109,14 @@ test('real API rejects a malformed phone, preserves fields and persists a correc
   await button.click();
   await expect(page.getByRole('status')).toContainText('Your interest has been registered');
   await expect(page.locator('#name')).toHaveValue('');
-  const records = await (await page.request.get(`${api}/v1/admin/registrations`, { headers })).json();
-  const saved = records.registrations.find((row: { email: string }) => row.email === 'browser-retry@example.test');
-  expect(saved).toMatchObject({ name: 'Browser retry parent', phone: '+447700900123', emailStatus: 'pending' });
+  expect((await signIn(page)).status).toBe(200);
+  const interests = await consoleRequest(page, '/api/interests?q=browser-retry%40example.test');
+  expect(interests.status).toBe(200);
+  expect(interests.body).toMatchObject({ interests: [expect.objectContaining({ name: 'Browser retry parent', phone: '+447700900123', email: 'browser-retry@example.test', emailStatus: 'pending', status: 'new' })] });
+  const interest = (interests.body as { interests: { id: string }[] }).interests[0];
+  const update = await consoleRequest(page, `/api/interests/${interest.id}`, 'PATCH', { status: 'follow_up', staffNote: 'Browser test: call next Tuesday.' });
+  expect(update.body).toMatchObject({ interest: { id: interest.id, status: 'follow_up', staffNote: 'Browser test: call next Tuesday.' } });
+  expect((await consoleRequest(page, `/api/interests/${interest.id}`)).body).toMatchObject({ interest: { id: interest.id, status: 'follow_up', staffNote: 'Browser test: call next Tuesday.' } });
 });
 
 test('transport failure retains details and a real retry succeeds', async ({ page }) => {
@@ -97,7 +130,7 @@ test('transport failure retains details and a real retry succeeds', async ({ pag
   await expect(page.getByRole('status')).toContainText('Your interest has been registered');
 });
 
-test('native form submission without JavaScript persists through the production proxy', async ({ browser, request }) => {
+test('native form submission without JavaScript persists through the production proxy', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, reducedMotion: 'reduce' });
   const page = await context.newPage();
   await page.goto('http://127.0.0.1:4322/');
@@ -105,37 +138,155 @@ test('native form submission without JavaScript persists through the production 
   await page.getByRole('button', { name: 'Register interest', exact: true }).click();
   await page.waitForURL('**/thanks/?registered=1');
   await expect(page.locator('main')).toContainText('Your interest is registered');
-  const data = await (await request.get(`${api}/v1/admin/registrations`, { headers })).json();
-  expect(data.registrations.some((row: { email: string }) => row.email === 'browser-native@example.test')).toBe(true);
+  await page.goto(dash);
+  expect((await signIn(page)).status).toBe(200);
+  const interests = await consoleRequest(page, '/api/interests?q=browser-native%40example.test');
+  expect(interests.body).toMatchObject({ interests: [expect.objectContaining({ email: 'browser-native@example.test' })] });
   await context.close();
 });
 
-test('admin API protection and dashboard filtering, empty search, refresh and lock', async ({ page, request }) => {
-  expect((await request.get(`${api}/v1/admin/registrations`)).status()).toBe(401);
+test('console sign-in uses a real session, survives refresh, and logout revokes API access', async ({ page }) => {
+  await mkdir(review, { recursive: true });
   await page.goto(dash);
-  await page.getByLabel('Access key').fill('wrong-key');
-  await page.getByRole('button', { name: 'Open inbox' }).click();
-  await expect(page.getByRole('alert')).toContainText('not accepted');
-  await page.getByLabel('Access key').fill('browser-test-access-key');
-  await page.getByRole('button', { name: 'Open inbox' }).click();
-  await expect(page.getByRole('table')).toBeVisible();
-  await page.getByLabel('Find a registration').fill('browser-retry@example.test');
-  await expect(page.locator('tbody tr')).toHaveCount(1);
-  await expect(page.locator('tbody')).toContainText('+447700900123');
-  await page.getByLabel('Find a registration').fill('no-such-person');
-  await expect(page.getByRole('heading', { name: 'No matches' })).toBeVisible();
-  await page.getByRole('button', { name: 'Clear filter' }).click();
-  await page.getByRole('button', { name: 'Refresh inbox' }).click();
-  await expect(page.getByRole('button', { name: 'Refresh inbox' })).toBeEnabled();
-  for (const [name, width, height] of [['dash-desktop', 1440, 1000], ['dash-mobile', 390, 844], ['dash-narrow', 320, 740]] as const) {
+  expect((await consoleRequest(page, '/api/interests')).status).toBe(401);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: `${review}/console-login.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: `${review}/console-login-mobile.png`, fullPage: true });
+  await page.locator('#login-email').fill(admin.email);
+  await page.locator('#login-password').fill('wrong-password');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await page.locator('#login-password').fill(admin.password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('navigation')).toContainText(/Interests/i);
+  expect((await consoleRequest(page, '/api/interests')).status).toBe(200);
+  await page.reload();
+  await expect(page.getByRole('navigation')).toContainText(/Interests/i);
+  expect((await consoleRequest(page, '/api/interests')).status).toBe(200);
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+  expect((await consoleRequest(page, '/api/interests')).status).toBe(401);
+});
+
+test('console interests are searchable and visually accessible at desktop and narrow widths', async ({ page }) => {
+  await mkdir(review, { recursive: true });
+  await page.goto(dash);
+  await signInThroughConsole(page);
+  await page.getByRole('button', { name: 'Interests', exact: true }).click();
+  await page.locator('#interest-search').fill('browser-retry@example.test');
+  await page.getByLabel('Filter by programme').selectOption('Kids');
+  await page.getByLabel('Filter by status').selectOption('follow_up');
+  await expect(page.getByText('Browser retry parent', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Browser retry parent' }).click();
+  await expect(page.locator('#interest-status')).toHaveValue('follow_up');
+  await page.locator('#interest-status').selectOption('contacted');
+  await page.locator('#staff-note').fill('Console UI: contacted and awaiting a reply.');
+  await page.locator('#interest-email').fill('browser-retry+console@example.test');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByRole('status')).toContainText('Changes saved.');
+  expect((await consoleRequest(page, '/api/interests?q=browser-retry%2Bconsole%40example.test')).body).toMatchObject({ interests: [expect.objectContaining({ status: 'contacted', staffNote: 'Console UI: contacted and awaiting a reply.', email: 'browser-retry+console@example.test' })] });
+  await page.locator('#interest-search').fill('');
+  await page.getByLabel('Filter by programme').selectOption('');
+  await page.getByLabel('Filter by status').selectOption('');
+  await expect(page.getByRole('button', { name: 'Open Browser retry parent' })).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: `${review}/console-desktop.png`, fullPage: true });
+  for (const [name, width, height] of [['console-mobile', 390, 844], ['console-narrow', 320, 740]] as const) {
     await page.setViewportSize({ width, height });
+    await page.getByRole('button', { name: 'Back to interests' }).click();
+    await expect(page.getByRole('button', { name: 'Open Browser retry parent' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
     await page.screenshot({ path: `${review}/${name}.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Open Browser retry parent' }).click();
+    await expect(page.locator('#interest-status')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: `${review}/${name}-detail.png`, fullPage: true });
   }
-  expect(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }))).toEqual({ local: 0, session: 0 });
-  await page.getByRole('button', { name: 'Clear and lock inbox' }).click();
-  await expect(page.getByLabel('Access key')).toHaveValue('');
-  await expect(page.getByRole('table')).toHaveCount(0);
-  await expect(page.getByLabel('Access key')).toBeFocused();
+});
+
+test('a failed detail request never shows the previously selected record and refresh errors remain visible', async ({ page }) => {
+  await signInThroughConsole(page);
+  await expect(page.getByRole('button', { name: 'Open Browser retry parent' })).toBeVisible();
+  const records = await consoleRequest(page, '/api/interests?q=browser');
+  const interests = (records.body as { interests: { id: string; name: string }[] }).interests;
+  const retry = interests.find(interest => interest.name === 'Browser retry parent');
+  const reconnect = interests.find(interest => interest.name === 'Browser reconnect parent');
+  expect(retry?.id).toBeTruthy();
+  expect(reconnect?.id).toBeTruthy();
+  await page.getByRole('button', { name: 'Open Browser retry parent' }).click();
+  await expect(page.locator('#interest-email')).toHaveValue('browser-retry+console@example.test');
+  await page.route(`**/api/interests/${reconnect!.id}`, route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ message: 'Temporarily unavailable.' }) }));
+  await page.getByRole('button', { name: 'Open Browser reconnect parent' }).click();
+  await expect(page.getByRole('alert')).toContainText('Record unavailable');
+  await expect(page.locator('#interest-email')).toHaveCount(0);
+  await page.unroute(`**/api/interests/${reconnect!.id}`);
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Open Browser retry parent' })).toBeVisible();
+  await page.route('**/api/interests?**', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ message: 'Temporarily unavailable.' }) }));
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+});
+
+test('admins manage staff through real sessions while staff cannot access user administration', async ({ browser, page }) => {
+  await mkdir(review, { recursive: true });
+  await signInThroughConsole(page);
+  await page.getByRole('button', { name: 'Staff accounts' }).click();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: `${review}/console-staff.png`, fullPage: true });
+  await page.locator('#new-staff-name').fill('Browser managed staff');
+  await page.locator('#new-staff-email').fill('browser-managed@example.test');
+  await page.locator('#new-staff-role').selectOption('staff');
+  await page.locator('#new-staff-password').fill('Browser-managed-password-2026!');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('status')).toContainText('Browser managed staff can now sign in.');
+  await page.getByRole('button', { name: 'Manage Browser managed staff' }).click();
+  await page.locator('#manage-role').selectOption('admin');
+  const promoted = page.waitForResponse(response => response.url().includes('/auth/staff/') && response.request().method() === 'PATCH');
+  await page.getByRole('button', { name: 'Save account changes' }).click();
+  expect((await promoted).status()).toBe(200);
+  await expect(page.locator('#manage-role')).toHaveValue('admin');
+  await page.locator('#manage-role').selectOption('staff');
+  const demoted = page.waitForResponse(response => response.url().includes('/auth/staff/') && response.request().method() === 'PATCH');
+  await page.getByRole('button', { name: 'Save account changes' }).click();
+  expect((await demoted).status()).toBe(200);
+  await expect(page.locator('#manage-role')).toHaveValue('staff');
+  await page.locator('#reset-password').fill('Browser-managed-reset-password-2026!');
+  const reset = page.waitForResponse(response => response.url().includes('/reset-password') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Reset password' }).click();
+  expect((await reset).status()).toBe(200);
+  await expect(page.locator('#reset-password')).toHaveValue('');
+  const users = await consoleRequest(page, '/auth/staff');
+  const managed = (users.body as { users: { id: string; email: string }[] }).users.find(user => user.email === 'browser-managed@example.test');
+  expect(managed?.id).toBeTruthy();
+  const managedContext = await browser.newContext({ baseURL: dash });
+  const managedPage = await managedContext.newPage();
+  expect((await signIn(managedPage, { email: 'browser-managed@example.test', password: 'Browser-managed-reset-password-2026!' })).status).toBe(200);
+  expect((await consoleRequest(managedPage, '/api/interests')).status).toBe(200);
+
+  const staffContext = await browser.newContext({ baseURL: dash });
+  const staffPage = await staffContext.newPage();
+  expect((await signIn(staffPage, staff)).status).toBe(200);
+  expect((await consoleRequest(staffPage, '/api/interests')).status).toBe(200);
+  expect((await consoleRequest(staffPage, '/auth/staff')).status).toBe(403);
+  expect((await consoleRequest(staffPage, `/auth/staff/${managed!.id}`, 'PATCH', { active: false })).status).toBe(403);
+  await staffContext.close();
+
+  await page.getByRole('button', { name: 'Manage Browser managed staff' }).click();
+  await page.getByRole('checkbox', { name: /Account active/i }).uncheck();
+  const disabled = page.waitForResponse(response => response.url().includes('/auth/staff/') && response.request().method() === 'PATCH');
+  await page.getByRole('button', { name: 'Save account changes' }).click();
+  expect((await disabled).status()).toBe(200);
+  await expect(page.getByRole('checkbox', { name: /Account active/i })).not.toBeChecked();
+  expect((await consoleRequest(managedPage, '/api/interests')).status).toBe(401);
+  await managedContext.close();
+  const disabledContext = await browser.newContext({ baseURL: dash });
+  const disabledPage = await disabledContext.newPage();
+  expect((await signIn(disabledPage, { email: 'browser-managed@example.test', password: 'Browser-managed-reset-password-2026!' })).status).toBe(401);
+  await disabledContext.close();
 });

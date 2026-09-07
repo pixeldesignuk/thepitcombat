@@ -12,9 +12,9 @@ const backendEnvPath = `${root}apps/backend/api/.env`;
 const backendEnv = existsSync(backendEnvPath) ? dotenv.parse(readFileSync(backendEnvPath)) : {};
 const requireApi = createRequire(new URL('../../../backend/api/package.json', import.meta.url));
 const { Pool } = requireApi('pg');
-const database = process.env.TEST_DATABASE_URL || backendEnv.TEST_DATABASE_URL || process.env.DATABASE_URL || backendEnv.DATABASE_URL;
-if (!database) throw new Error('Set TEST_DATABASE_URL or DATABASE_URL for the isolated browser-test schema.');
+const database = process.env.TEST_DATABASE_URL || backendEnv.TEST_DATABASE_URL || 'postgresql://pit:pit_dev@127.0.0.1:55432/pit';
 const schema = `pit_browser_${randomUUID().replaceAll('-', '')}`;
+const authSchema = `pit_auth_browser_${randomUUID().replaceAll('-', '')}`;
 const admin = new Pool({ connectionString: database });
 const children = [];
 let stopping = false;
@@ -29,15 +29,17 @@ async function stop(code = 0) {
     timeout.unref();
   })));
   await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+  await admin.query(`DROP SCHEMA IF EXISTS "${authSchema}" CASCADE`);
   await admin.end();
   process.exit(code);
 }
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { void stop(); });
 const env = {
-  ...process.env, NODE_ENV: 'production', ADMIN_API_TOKEN: 'browser-test-access-key',
+  ...process.env, NODE_ENV: 'production',
   RESEND_API_KEY: '', RESEND_FROM_EMAIL: '', REPLY_TO_EMAIL: '',
   PUBLIC_SITE_URL: 'http://127.0.0.1:4322', DASH_URL: 'http://127.0.0.1:5174',
-  API_URL: 'http://127.0.0.1:3301', VITE_API_URL: 'http://127.0.0.1:3301',
+  API_URL: 'http://127.0.0.1:3301', API_INTERNAL_URL: 'http://127.0.0.1:3301',
+  AUTH_INTERNAL_URL: 'http://127.0.0.1:3302', CONSOLE_URL: 'http://127.0.0.1:5174',
 };
 function start(command, args, extra = {}) {
   const child = spawn(command, args, { cwd: root, env: { ...env, ...extra }, stdio: 'inherit' });
@@ -51,6 +53,13 @@ function build(workspace) {
     child.once('exit', code => code === 0 ? resolve() : reject(new Error(`${workspace} build failed`)));
   });
 }
+function run(command, args, extra) {
+  return new Promise((resolve, reject) => {
+    const child = start(command, args, extra);
+    child.once('error', reject);
+    child.once('exit', code => code === 0 ? resolve() : reject(new Error('Browser test setup failed')));
+  });
+}
 async function ready(url) {
   for (let attempt = 0; attempt < 100; attempt++) {
     try { if ((await fetch(url)).ok) return; } catch {}
@@ -62,16 +71,28 @@ try {
   await admin.query(`CREATE SCHEMA "${schema}"`);
   const isolated = new URL(database);
   isolated.searchParams.set('options', `-c search_path=${schema}`);
+  await build('@pit/auth');
   await build('@pit/api');
   await build('@pit/site');
   await build('@pit/dash');
-  start(process.execPath, ['apps/backend/api/dist/server.js'], { DATABASE_URL: isolated.toString(), PORT: '3301' });
+  const authEnv = {
+    NODE_ENV: 'test', DATABASE_URL: database, AUTH_DB_SCHEMA: authSchema, PORT: '3302',
+    BETTER_AUTH_SECRET: 'isolated-browser-tests-secret-not-for-deployment',
+    BETTER_AUTH_URL: 'http://127.0.0.1:5174', AUTH_TRUSTED_ORIGINS: 'http://127.0.0.1:5174',
+    SEED_ADMIN_NAME: 'Test administrator', SEED_ADMIN_EMAIL: 'admin@thepitcombat.test', SEED_ADMIN_PASSWORD: 'Browser-admin-test-password-2026!',
+    SEED_STAFF_NAME: 'Test staff', SEED_STAFF_EMAIL: 'staff@thepitcombat.test', SEED_STAFF_PASSWORD: 'Browser-staff-test-password-2026!',
+  };
+  await run(process.execPath, ['apps/backend/auth/dist/migrate.js'], authEnv);
+  await run(process.execPath, ['apps/backend/auth/dist/seed.js'], authEnv);
+  start(process.execPath, ['apps/backend/auth/dist/server.js'], authEnv);
+  await ready('http://127.0.0.1:3302/healthz');
+  start(process.execPath, ['apps/backend/api/dist/server.js'], { DATABASE_URL: isolated.toString(), PORT: '3301', HOST: '127.0.0.1' });
   await ready('http://127.0.0.1:3301/healthz');
-  start(process.execPath, ['apps/web/dash/node_modules/vite/bin/vite.js', 'preview', 'apps/web/dash', '--host', '127.0.0.1', '--port', '5174', '--strictPort']);
+  start(process.execPath, ['apps/web/dash/server.mjs'], { HOST: '127.0.0.1', PORT: '5174' });
   await ready('http://127.0.0.1:5174');
   start(process.execPath, ['apps/web/site/dist/server/entry.mjs'], { HOST: '127.0.0.1', PORT: '4322' });
   await ready('http://127.0.0.1:4322/healthz');
-  console.log('Browser stack ready: production site, API, dashboard and isolated PostgreSQL schema. Email sending disabled.');
+  console.log('Browser stack ready: production site, API, console proxy, Better Auth and isolated PostgreSQL schemas. Email sending disabled.');
 } catch (error) {
   console.error(error instanceof Error ? error.message.replace(database, '[database]') : 'Browser stack failed.');
   await stop(1);

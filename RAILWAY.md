@@ -1,6 +1,6 @@
 # Railway Infrastructure as Code
 
-The project is configured in one [`.railway/railway.ts`](.railway/railway.ts). It targets Railway project **thepit**, environment **development**, and retains the existing public-site service name **website**. The source code for that service remains in `apps/web/site`. The applied migration retained `Postgres` and created `api` and `dash`.
+The project is configured in one [`.railway/railway.ts`](.railway/railway.ts). It targets Railway project **thepit**, environment **development**, and retains the existing public-site service name **website**. The source code for that service remains in `apps/web/site`. The environment contains `website`, `api`, `dash`, and the dedicated `auth` service, backed by the existing Postgres resource and volume.
 
 This replaces the three per-service `railway.json` files and the former manual-settings workflow. Railway evaluates IaC through its CLI. **Pushing the file to GitHub does not apply infrastructure changes**; this repository has no infrastructure auto-apply pipeline. Existing application GitHub autodeploys are a separate mechanism. [Railway IaC guide](https://docs.railway.com/infrastructure-as-code)
 
@@ -45,34 +45,35 @@ All application services use GitHub source `pixeldesignuk/thepitcombat`, branch 
 | --- | --- | --- |
 | `website` | `apps/web/site/Dockerfile` | Astro standalone Node server |
 | `api` | `apps/backend/api/Dockerfile` | Fastify API and PostgreSQL-backed email outbox |
-| `dash` | `apps/web/dash/Dockerfile` | Built Vite/React app through a Node static server |
+| `dash` | `apps/web/dash/Dockerfile` | Vite/React console with a Node authentication/API proxy |
+| `auth` | `apps/backend/auth/Dockerfile` | Better Auth email/password sessions and staff management |
 
-The definition sets application `PORT=3000`, one replica per application's configured region, `/healthz` and a 120-second health timeout. Restart uses Railway's default on-failure policy with ten retries, rather than explicit fields that Railway normalizes away. API pre-deploy runs `node apps/backend/api/dist/migrate.js`. PostgreSQL remains a separate persistent resource.
+The definition sets application `PORT=3000`, one replica per application's configured region, `/healthz` and a 120-second health timeout. Restart uses Railway's default on-failure policy with ten retries, rather than explicit fields that Railway normalizes away. API pre-deploy runs `node apps/backend/api/dist/migrate.js`. Auth pre-deploy runs its compiled `migrate.js` and `seed.js`; seeding only creates missing accounts. Auth tables use the separate `pit_auth` schema. API and auth bind to `::` for Railway private-network IPv6 and IPv4. PostgreSQL remains a separate persistent resource.
 
-The website's server-only `API_URL` uses `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:3000`. The browser posts to the website's same-origin `/api/registrations` endpoint. The dashboard calls the API's **public HTTPS origin**, so website, API and dashboard need their correct public domains. Public domains are not interchangeable with Railway private DNS.
+The website's server-only `API_URL` uses `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:3000`. The browser posts to the website's same-origin `/api/registrations` endpoint. The console browser calls only its own `/auth` and `/api` routes. Its Node server forwards them to private auth/API addresses, preserving HttpOnly cookies. Website and console need public HTTPS domains; auth and API do not need public domains for this workflow.
 
 ## Values kept on Railway
 
 `preserve()` retains a value already configured on the selected Railway service. It does **not** create a secret, invent a URL or supply a missing value. Supply missing values in Railway before expecting a new service to work. [Preservation semantics](https://docs.railway.com/infrastructure-as-code/reference)
 
-The live import confirmed that `website.PUBLIC_SITE_URL` is not set yet. It must be supplied for the website build. The new API and dashboard also need their preserved admin/email/origin values configured; a clean or non-destructive infrastructure plan does not establish application readiness.
-
 | Service | Required or optional configuration |
 | --- | --- |
 | `website` | `PUBLIC_SITE_URL`: actual website HTTPS origin. Optional accurate `OPERATOR_NAME`, `PRIVACY_EMAIL`, `CORRESPONDENCE_ADDRESS`. |
-| `api` | `DATABASE_URL` references Postgres; `PUBLIC_SITE_URL` references website. Set `DASH_URL` to dashboard HTTPS origin and `ADMIN_API_TOKEN` to a long random secret. Configure `RESEND_API_KEY`, verified `RESEND_FROM_EMAIL` and monitored `REPLY_TO_EMAIL` for email delivery. |
-| `dash` | `VITE_API_URL`: API public HTTPS origin, never an admin token or private DNS URL. |
+| `api` | Database, auth address and allowed console origin are references. Configure `RESEND_API_KEY`, verified `RESEND_FROM_EMAIL` and monitored `REPLY_TO_EMAIL` for confirmation emails. |
+| `dash` | `CONSOLE_URL`: exact console HTTPS origin. Private API/auth proxy targets are declared in IaC. |
+| `auth` | `BETTER_AUTH_SECRET`: random signing secret. `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME`, `SEED_ADMIN_PASSWORD` and the corresponding `SEED_STAFF_*` values create initial accounts. Database and public auth origin are references. |
 
-`PUBLIC_SITE_URL` must exist at website **build time and runtime**: its Docker argument pins Astro's trusted forwarded-host policy. Rebuild when the website domain changes. Dashboard `VITE_API_URL` is also a public Docker build argument; rebuild when it changes. Keep database credentials, admin tokens and Resend keys on the API only, never in frontend build arguments.
+`PUBLIC_SITE_URL` must exist at website **build time and runtime** because Astro trusts that forwarded public host. Rebuild the website when its domain changes. Console proxy targets are runtime settings; no public `VITE_API_URL` or browser admin key is used. The auth public origin is the console origin, not the private auth address. Production auth requires HTTPS.
 
-Local configuration stays in each app's ignored `.env`; API secrets belong in `apps/backend/api/.env`. IaC does not upload those files. Railway supplies deployed variables independently. The root `.env` is not loaded.
+Keep the same auth signing secret across restarts. Set seed credentials on the auth service before its initial migration/seed deployment; do not commit them. Re-running seeding does not reset passwords, change roles or re-enable existing accounts. Administrators manage accounts inside the console after bootstrap. Password resets, role changes and deactivation revoke affected sessions; the final active administrator is protected.
+
+Local `.env` files are never uploaded by IaC. Railway supplies deployed variables independently. The auth service and API use the configured database; use an explicit local `TEST_DATABASE_URL` for isolated automated tests.
 
 ## Deployment verification
 
-After the intended configuration is applied, verify API migration and `/healthz`, then deploy/rebuild the website and dashboard with their public-origin values. Submit controlled contact details, check actual PostgreSQL/dashboard receipt and separately verify Resend delivery. A healthy API or saved registration does not prove an email was delivered.
+After the intended configuration is applied, verify API/auth migrations and `/healthz`, then sign into the console and check interest and staff management. Submit controlled contact details, check actual PostgreSQL/dashboard receipt and separately verify Resend delivery. A healthy API or saved registration does not prove an email was delivered.
 
 If logs still show Railpack or “no start command”, inspect the latest plan and applied environment: the affected service must use its Dockerfile and repository root, with old overrides removed. A Git push alone cannot correct unapplied infrastructure settings.
 
-Final live verification on 7 September 2026: the normalized IaC definition produces **no plan changes**. All three application deployments report **SUCCESS** with the exact intended Dockerfiles; API migration/start and website/dashboard startup succeeded. The original Postgres deployment is unchanged. No public domains are assigned yet, and required origins, admin, dashboard API URL and Resend settings remain unset; public form operation and real email delivery are therefore unverified.
-
+The initial three-service IaC migration was verified without database changes. The console/auth extension is validated separately through real session, role, persistence and browser tests; public form and Resend delivery must also be checked on the actual configured host.
 Local verification additionally covered isolated PostgreSQL persistence, retry handling, dashboard authentication and simulated Railway HTTPS forwarding. Matching Host/Origin succeeded, hostile Origin failed and native submission redirected after saving. `compose.yaml` remains only the local PostgreSQL dependency; it is not the Railway deployment definition.
