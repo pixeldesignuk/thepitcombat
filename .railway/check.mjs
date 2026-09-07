@@ -34,7 +34,9 @@ for (const [name, dockerfile] of expectedApps) {
   assert.ok(app.deploy.startCommand == null);
   assert.equal(app.deploy.healthcheckPath, '/healthz');
   assert.equal(app.deploy.healthcheckTimeout, 120);
-  assert.equal(app.deploy.restartPolicyMaxRetries, 10);
+  assert.ok(app.deploy.restartPolicyType == null); // Railway default: On Failure.
+  assert.ok(app.deploy.restartPolicyMaxRetries == null); // Railway default: 10.
+  assert.equal(Object.values(app.deploy.multiRegionConfig).reduce((sum, region) => sum + region.numReplicas, 0), 1);
 }
 const api = resources.find(item => item.name === 'api');
 assert.deepEqual(api.deploy.preDeployCommand, ['node apps/backend/api/dist/migrate.js']);

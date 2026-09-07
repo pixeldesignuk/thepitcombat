@@ -1,6 +1,6 @@
 # Railway Infrastructure as Code
 
-The project is configured in one [`.railway/railway.ts`](.railway/railway.ts). It targets Railway project **thepit**, environment **development**, and retains the existing public-site service name **website**. The source code for that service remains in `apps/web/site`. `Postgres` is also an existing service; `api` and `dash` complete the intended application environment.
+The project is configured in one [`.railway/railway.ts`](.railway/railway.ts). It targets Railway project **thepit**, environment **development**, and retains the existing public-site service name **website**. The source code for that service remains in `apps/web/site`. The applied migration retained `Postgres` and created `api` and `dash`.
 
 This replaces the three per-service `railway.json` files and the former manual-settings workflow. Railway evaluates IaC through its CLI. **Pushing the file to GitHub does not apply infrastructure changes**; this repository has no infrastructure auto-apply pipeline. Existing application GitHub autodeploys are a separate mechanism. [Railway IaC guide](https://docs.railway.com/infrastructure-as-code)
 
@@ -19,7 +19,7 @@ pnpm railway:plan
 
 `railway:check` validates the definition locally; it does not compare it with Railway. `railway:plan` reads the selected environment and shows proposed changes. The authoring file rejects a different project name or environment. Confirm the status and the plan both target **thepit / development**, not an environment named `dev`.
 
-On 7 September 2026, the local CLI was authenticated and linked to that environment. Local SDK/type and graph validation passed. The live plan reported **2 additions, 5 changes, 0 deletions**, with **no Postgres changes**. The definition retains the imported Postgres 18 image, existing volume, credentials and placement. These are plan results; the migration has not yet been applied. A new plan is required after further source or live-state changes.
+On 7 September 2026, the local CLI was authenticated and linked to that environment. Local SDK/type and graph validation passed; the reviewed live plan reported **2 additions, 5 changes, 0 deletions**. After commit `d50f085` was pushed, `pnpm exec railway config apply --yes` succeeded: website configuration changed and `api`/`dash` were created, with **no Postgres changes**. The imported Postgres 18 image, volume, credentials and placement were retained. A new plan checks post-apply drift or subsequent source/live-state changes; apply success alone does not establish application readiness.
 
 After reviewing the exact plan, apply it with:
 
@@ -27,7 +27,7 @@ After reviewing the exact plan, apply it with:
 pnpm exec railway config apply
 ```
 
-The CLI presents the changes for confirmation. Do not add automatic confirmation flags to this initial migration. Plan output redacts variable values by default; no secret-revealing flags are needed. These commands are documented here for the deployment workflow; no apply was performed by writing this configuration. [CLI configuration reference](https://docs.railway.com/cli/config)
+The interactive command presents the changes for confirmation. The initial reviewed apply used `--yes` as recorded above; future changes should still be reviewed against the selected environment. Plan output redacts variable values by default; no secret-revealing flags are needed. [CLI configuration reference](https://docs.railway.com/cli/config)
 
 ## Reconcile the existing environment
 
@@ -47,7 +47,7 @@ All application services use GitHub source `pixeldesignuk/thepitcombat`, branch 
 | `api` | `apps/backend/api/Dockerfile` | Fastify API and PostgreSQL-backed email outbox |
 | `dash` | `apps/web/dash/Dockerfile` | Built Vite/React app through a Node static server |
 
-The definition sets application `PORT=3000`, one replica, `/healthz`, a 120-second health timeout and on-failure restart with ten retries. API pre-deploy runs `node apps/backend/api/dist/migrate.js`. PostgreSQL remains a separate persistent resource.
+The definition sets application `PORT=3000`, one replica per application's configured region, `/healthz` and a 120-second health timeout. Restart uses Railway's default on-failure policy with ten retries, rather than explicit fields that Railway normalizes away. API pre-deploy runs `node apps/backend/api/dist/migrate.js`. PostgreSQL remains a separate persistent resource.
 
 The website's server-only `API_URL` uses `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:3000`. The browser posts to the website's same-origin `/api/registrations` endpoint. The dashboard calls the API's **public HTTPS origin**, so website, API and dashboard need their correct public domains. Public domains are not interchangeable with Railway private DNS.
 
@@ -73,4 +73,6 @@ After the intended configuration is applied, verify API migration and `/healthz`
 
 If logs still show Railpack or “no start command”, inspect the latest plan and applied environment: the affected service must use its Dockerfile and repository root, with old overrides removed. A Git push alone cannot correct unapplied infrastructure settings.
 
-Local verification on 7 September 2026 covered all three Docker images, isolated PostgreSQL persistence, retry handling, dashboard authentication and simulated Railway HTTPS forwarding. Matching Host/Origin succeeded, hostile Origin failed and native submission redirected after saving. Those results do not establish a live Railway deployment or real email delivery. `compose.yaml` remains only the local PostgreSQL dependency; it is not the Railway deployment definition.
+Final live verification on 7 September 2026: the normalized IaC definition produces **no plan changes**. All three application deployments report **SUCCESS** with the exact intended Dockerfiles; API migration/start and website/dashboard startup succeeded. The original Postgres deployment is unchanged. No public domains are assigned yet, and required origins, admin, dashboard API URL and Resend settings remain unset; public form operation and real email delivery are therefore unverified.
+
+Local verification additionally covered isolated PostgreSQL persistence, retry handling, dashboard authentication and simulated Railway HTTPS forwarding. Matching Host/Origin succeeded, hostile Origin failed and native submission redirected after saving. `compose.yaml` remains only the local PostgreSQL dependency; it is not the Railway deployment definition.

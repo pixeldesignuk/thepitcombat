@@ -21,9 +21,8 @@ export default defineRailway((ctx) => {
     preDeployCommand: [] as string[],
     healthcheckPath: '/healthz',
     healthcheckTimeout: 120,
-    numReplicas: 1,
-    restartPolicyType: 'ON_FAILURE' as const,
-    restartPolicyMaxRetries: 10,
+    // Railway normalizes its default On Failure / 10 retries to absent fields.
+    // Keep that default instead of repeatedly planning writes of the same value.
   };
 
   // Imported from the live development environment: retain PostgreSQL 18,
@@ -56,7 +55,8 @@ export default defineRailway((ctx) => {
   const website = service('website', {
     source: source(),
     build: build('apps/web/site/Dockerfile'),
-    deploy: { ...deploy, ipv6EgressEnabled: false, multiRegionConfig: { 'europe-west4-drams3a': { numReplicas: 1 } } },
+    deploy: { ...deploy, ipv6EgressEnabled: false },
+    replicas: { 'europe-west4-drams3a': 1 },
     networking: { privateNetworkEndpoint: 'thepitcombat' },
     env: {
       PORT: '3000',
@@ -73,6 +73,7 @@ export default defineRailway((ctx) => {
     source: source(),
     build: build('apps/backend/api/Dockerfile'),
     deploy: { ...deploy, preDeployCommand: ['node apps/backend/api/dist/migrate.js'] },
+    replicas: { 'us-east4-eqdc4a': 1 },
     env: {
       PORT: '3000',
       DATABASE_URL: db.env.DATABASE_URL,
@@ -89,6 +90,7 @@ export default defineRailway((ctx) => {
     source: source(),
     build: build('apps/web/dash/Dockerfile'),
     deploy,
+    replicas: { 'us-east4-eqdc4a': 1 },
     env: {
       PORT: '3000',
       VITE_API_URL: preserve(),

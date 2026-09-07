@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-pnpm/Turborepo monorepo: Astro with the Node standalone adapter in `apps/web/site`, Node.js/Fastify with PostgreSQL in `apps/backend/api`, and Vite/React in `apps/web/dash`. Separate Docker images share the repository-root build context. One `.railway/railway.ts` describes the Railway infrastructure for project `thepit`, environment `development`; the existing Astro service is named `website`. The existing `Postgres` resource remains alongside it; API and dashboard are planned additions, subject to the live IaC plan. CLI plan/apply manages infrastructure; Git pushes do not apply it. This establishes the custom gym management system's registration intake and staff inbox; member accounts, billing and attendance are not implemented in this phase.
+pnpm/Turborepo monorepo: Astro with the Node standalone adapter in `apps/web/site`, Node.js/Fastify with PostgreSQL in `apps/backend/api`, and Vite/React in `apps/web/dash`. Separate Docker images share the repository-root build context. One `.railway/railway.ts` describes the Railway infrastructure for project `thepit`, environment `development`; the existing Astro service is named `website`. The existing `Postgres` resource remains alongside it; the applied migration created API and dashboard services. CLI plan/apply manages infrastructure; Git pushes do not apply it. This establishes the custom gym management system's registration intake and staff inbox; member accounts, billing and attendance are not implemented in this phase.
 
 ## Users
 
@@ -35,7 +35,7 @@ The association naming direction should convey sport and youth development. The 
 - Same-origin website submission proxies to the API; PostgreSQL persists registrations and an email outbox. Resend sends confirmations when its API key and verified sender are configured; absent credentials leave emails queued without blocking registration storage.
 - The dashboard requires the backend admin access key and displays registrations and email status. Credentials stay out of frontend builds.
 - Local configuration lives in each app's `.env`: API database/Resend/admin secrets in `apps/backend/api/.env`, website settings in `apps/web/site/.env`, and the dashboard's public API URL in `apps/web/dash/.env`. These files are excluded from Git/Docker; the workspace-root `.env` is not loaded. Optional operator identity, privacy contact and correspondence address populate public privacy information.
-- All three Docker images and isolated registration persistence were verified locally. Railway IaC preserves existing secret values without embedding them in source. The authenticated live plan for `thepit / development` reported 2 additions, 5 changes and no deletions, with no Postgres changes; it has not been applied. Required public-origin values, deployment and real email receipt remain to be checked.
+- All three Docker images and isolated registration persistence were verified locally. The `thepit / development` migration was applied successfully on 7 September 2026 without Postgres changes. After normalizing platform defaults, the live plan shows no changes; all three application deployments report SUCCESS, including API migration/start. No public domains are assigned yet; required origins, admin, dashboard API URL and Resend settings remain unset. Public form operation and real email delivery are unverified.
 - Exact address, opening date, age bands and coach credentials are unconfirmed. Do not fabricate them.
 
 ## Brand Commitments

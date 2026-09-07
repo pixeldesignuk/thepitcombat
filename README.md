@@ -31,7 +31,7 @@ The enabled form saves adult/parent name, email, phone number, programme and con
 
 Run `pnpm build`, `pnpm test` and `pnpm test:browser` for project checks. `pnpm db:stop` stops the local database while retaining its data.
 
-Railway infrastructure is authored in one [`.railway/railway.ts`](.railway/railway.ts) file for project **thepit**, environment **development**. The existing public-site service is named **website**, while its code remains in `apps/web/site`; `Postgres` also exists, with API and dashboard planned alongside it. See [Railway deployment](RAILWAY.md) for CLI plan/apply and reconciling existing services. A Git push does not apply the infrastructure definition. Secrets stay in Railway through `preserve()` entries; local app `.env` files are not uploaded. No infrastructure apply or public deployment has been performed by this migration.
+Railway infrastructure is authored in one [`.railway/railway.ts`](.railway/railway.ts) file for project **thepit**, environment **development**. The existing public-site service is named **website**, while its code remains in `apps/web/site`; `Postgres` is retained, and the migration created API and dashboard services. See [Railway deployment](RAILWAY.md) for CLI plan/apply and reconciling existing services. A Git push does not apply the infrastructure definition. Secrets stay in Railway through `preserve()` entries; local app `.env` files are not uploaded. The reviewed migration from commit `d50f085` was applied successfully on 7 September 2026 without Postgres changes. Required public-origin, admin and email values remain to be configured; successful live application operation has not been verified.
 
 ## Membership offer
 
@@ -47,6 +47,6 @@ Monday–Friday: kids **6:30–7:30pm**, changeover **7:30–7:45pm**, combined 
 - Review and adopt the constitution with actual officers and independent committee members. Personal appointments and signatures are blank; charity/CASC status is not claimed.
 - Confirm venue, staffing, capacities, age bands, class allocations and opening date before presenting the schedule as committed.
 - Supply the actual operator identity, privacy inbox and correspondence address for the public privacy information.
-- Review the Railway IaC plan against the existing `thepit` / `development` environment, apply the intended configuration and configure the verified Resend sender. Then verify real registration and email receipt on the deployed host. Local Docker integration is verified; no live infrastructure apply or registration application has been performed by this work.
+- Complete the applied Railway services’ public-origin, admin and verified Resend sender settings, then verify real registration and email receipt on the deployed host. Local Docker integration and infrastructure apply are verified; live application operation and real email delivery are not.
 
 The older [master plan](MASTER-PLAN.md) carries a current implementation note and entity correction; its July maktab and launch timeline are historical.
