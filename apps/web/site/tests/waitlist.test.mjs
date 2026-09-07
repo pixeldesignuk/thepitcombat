@@ -18,11 +18,15 @@ test('submission safely encodes fields and excludes unexpected personal data', (
   data.set('name', 'A & B');
   data.set('email', 'parent+pit@example.org');
   data.set('phone', '+44 7700 900123');
-  data.set('programme', 'Kids');
+  data.append('programmes', 'Kids');
+  data.append('programmes', 'Adults');
+  data.set('comment', 'BJJ & wrestling, please.');
   data.set('consent', 'opening-updates-email-phone');
   data.set('website', '');
   data.set('child-date-of-birth', '2020-01-01');
   const encoded = new URLSearchParams(encodeSubmission(data));
+  assert.deepEqual(encoded.getAll('programmes'), ['Kids', 'Adults']);
+  assert.equal(encoded.get('comment'), 'BJJ & wrestling, please.');
   assert.equal(encoded.get('name'), 'A & B');
   assert.equal(encoded.get('email'), 'parent+pit@example.org');
   assert.equal(encoded.get('phone'), '+44 7700 900123');

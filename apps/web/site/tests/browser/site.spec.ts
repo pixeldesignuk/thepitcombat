@@ -40,8 +40,8 @@ async function fill(page: Page, name: string, email: string) {
   await page.locator('#name').fill(name);
   await page.locator('#email').fill(email);
   await page.locator('#phone').fill('+44 7700 900123');
-  await page.locator('#programme').selectOption('Kids');
-  await page.getByRole('checkbox').check();
+  await page.locator('[name=programmes][value=Kids]').check();
+  await page.locator('[name=consent]').check();
 }
 
 test('desktop, mobile and narrow layouts, keyboard FAQ and accessibility', async ({ page }) => {
@@ -94,6 +94,8 @@ test('real API rejects a malformed phone, preserves fields and persists a correc
   await button.click();
   await expect(page.locator('#name')).toBeFocused();
   await fill(page, 'Browser retry parent', 'browser-retry@example.test');
+  await page.locator('[name=programmes][value=Adults]').check();
+  await page.locator('#comment').fill('Interested in BJJ for me and wrestling for my child.');
   await page.locator('#phone').fill('not-a-number');
   await button.click();
   await expect(page.locator('#phone')).toBeFocused();
@@ -107,12 +109,12 @@ test('real API rejects a malformed phone, preserves fields and persists a correc
   await expect(page.locator('#email')).toHaveValue('browser-retry@example.test');
   await page.locator('#phone').fill('+44 7700 900123');
   await button.click();
-  await expect(page.getByRole('status')).toContainText('Your interest has been registered');
-  await expect(page.locator('#name')).toHaveValue('');
+  await expect(page).toHaveURL(/\/thanks\/\?registered=1$/);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('THE LIST.');
   expect((await signIn(page)).status).toBe(200);
   const interests = await consoleRequest(page, '/api/interests?q=browser-retry%40example.test');
   expect(interests.status).toBe(200);
-  expect(interests.body).toMatchObject({ interests: [expect.objectContaining({ name: 'Browser retry parent', phone: '+447700900123', email: 'browser-retry@example.test', emailStatus: 'pending', status: 'new' })] });
+  expect(interests.body).toMatchObject({ interests: [expect.objectContaining({ name: 'Browser retry parent', phone: '+447700900123', email: 'browser-retry@example.test', emailStatus: 'pending', status: 'new', programmes: ['Kids', 'Adults'], comment: 'Interested in BJJ for me and wrestling for my child.' })] });
   const interest = (interests.body as { interests: { id: string }[] }).interests[0];
   const update = await consoleRequest(page, `/api/interests/${interest.id}`, 'PATCH', { status: 'follow_up', staffNote: 'Browser test: call next Tuesday.' });
   expect(update.body).toMatchObject({ interest: { id: interest.id, status: 'follow_up', staffNote: 'Browser test: call next Tuesday.' } });
@@ -127,7 +129,7 @@ test('transport failure retains details and a real retry succeeds', async ({ pag
   await expect(page.getByRole('status')).toContainText('couldn’t confirm');
   await expect(page.locator('#phone')).toHaveValue('+44 7700 900123');
   await page.getByRole('button', { name: 'Register interest', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Your interest has been registered');
+  await expect(page).toHaveURL(/\/thanks\/\?registered=1$/);
 });
 
 test('native form submission without JavaScript persists through the production proxy', async ({ browser }) => {
@@ -180,12 +182,15 @@ test('console interests are searchable and visually accessible at desktop and na
   await expect(page.getByText('Browser retry parent', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Open Browser retry parent' }).click();
   await expect(page.locator('#interest-status')).toHaveValue('follow_up');
+  await expect(page.locator('.visitor-comment')).toContainText('Interested in BJJ');
+  await expect(page.getByRole('checkbox', { name: 'Adults', exact: true })).toBeChecked();
+  await page.getByRole('checkbox', { name: 'Teens', exact: true }).check();
   await page.locator('#interest-status').selectOption('contacted');
   await page.locator('#staff-note').fill('Console UI: contacted and awaiting a reply.');
   await page.locator('#interest-email').fill('browser-retry+console@example.test');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('status')).toContainText('Changes saved.');
-  expect((await consoleRequest(page, '/api/interests?q=browser-retry%2Bconsole%40example.test')).body).toMatchObject({ interests: [expect.objectContaining({ status: 'contacted', staffNote: 'Console UI: contacted and awaiting a reply.', email: 'browser-retry+console@example.test' })] });
+  expect((await consoleRequest(page, '/api/interests?q=browser-retry%2Bconsole%40example.test')).body).toMatchObject({ interests: [expect.objectContaining({ status: 'contacted', programmes: ['Kids', 'Teens', 'Adults'], staffNote: 'Console UI: contacted and awaiting a reply.', email: 'browser-retry+console@example.test' })] });
   await page.locator('#interest-search').fill('');
   await page.getByLabel('Filter by programme').selectOption('');
   await page.getByLabel('Filter by status').selectOption('');
@@ -289,4 +294,34 @@ test('admins manage staff through real sessions while staff cannot access user a
   const disabledPage = await disabledContext.newPage();
   expect((await signIn(disabledPage, { email: 'browser-managed@example.test', password: 'Browser-managed-reset-password-2026!' })).status).toBe(401);
   await disabledContext.close();
+});
+
+
+test('multi-select validation and dedicated confirmation with social links', async ({ page }) => {
+  await page.goto('/');
+  await fill(page, 'Choice validation', 'choices@example.test');
+  await page.locator('[name=programmes][value=Kids]').uncheck();
+  await page.getByRole('button', { name: 'Register interest', exact: true }).click();
+  await expect(page.locator('#programme-0')).toBeFocused();
+  await page.getByRole('checkbox', { name: 'Kids', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Adults', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Not sure yet', exact: true }).check();
+  await expect(page.getByRole('checkbox', { name: 'Kids', exact: true })).not.toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'Adults', exact: true })).not.toBeChecked();
+  await page.getByRole('checkbox', { name: 'Teens', exact: true }).check();
+  await expect(page.getByRole('checkbox', { name: 'Not sure yet', exact: true })).not.toBeChecked();
+  for (const [name, width, height] of [['desktop', 1440, 1000], ['mobile', 390, 844], ['narrow', 320, 740]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto('/#register');
+    await page.evaluate(() => document.fonts.ready);
+    await page.locator('.form-panel').screenshot({ path: `${review}/interest-form-${name}.png` });
+    await page.goto('/thanks/?registered=1');
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('THE LIST.');
+    await expect(page.getByRole('link', { name: /Instagram/ })).toHaveAttribute('href', 'https://www.instagram.com/thepitcombat/');
+    await expect(page.getByRole('link', { name: /TikTok/ })).toHaveAttribute('href', 'https://www.tiktok.com/@thepitcombat');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: `${review}/interest-thanks-${name}.png`, fullPage: true });
+  }
 });

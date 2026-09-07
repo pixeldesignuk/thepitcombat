@@ -13,5 +13,9 @@
     { "name": "Kids", "description": "A place to build confidence, learn respect and develop the fundamentals." },
     { "name": "Teens & adults", "description": "Start with the basics. Keep building your skill, fitness and discipline." }
   ],
-  "programmeOptions": ["Kids", "Teens", "Adults", "More than one / not sure yet"]
+  "programmeOptions": ["Kids", "Teens", "Adults", "More than one / not sure yet"],
+  "socials": [
+    { "name": "Instagram", "url": "https://www.instagram.com/thepitcombat/" },
+    { "name": "TikTok", "url": "https://www.tiktok.com/@thepitcombat" }
+  ]
 }

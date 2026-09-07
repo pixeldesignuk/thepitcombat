@@ -9,11 +9,14 @@ export function getWaitlistConfig(env = {}) {
 }
 
 export function encodeSubmission(formData) {
-  const allowed = ['submissionId', 'name', 'email', 'phone', 'programme', 'consent', 'website'];
+  const allowed = ['submissionId', 'name', 'email', 'phone', 'programme', 'comment', 'consent', 'website'];
   const body = new URLSearchParams();
   for (const key of allowed) {
     const value = formData.get(key);
     if (typeof value === 'string') body.set(key, value);
+  }
+  for (const value of formData.getAll('programmes')) {
+    if (typeof value === 'string') body.append('programmes', value);
   }
   return body.toString();
 }

@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import '../styles/registration.css';
 import site from '../data/site.json';
 import timetable from '../../../../../operations/timetable.json';
 import { formatTime as time, groupWeekdays } from '../lib/schedule.mjs';
@@ -74,8 +75,16 @@ const weekends = timetable.days.filter(day => day.kind === 'weekend');
             <label for="phone">Phone number</label>
             <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" pattern="\+?[0-9\s\(\).\-]{8,30}" title="Enter a phone number; include the country code if outside the UK." aria-describedby="phone-hint" required />
             <p id="phone-hint" class="form-privacy">Include the country code if outside the UK.</p>
-            <label for="programme">Who is interested in training?</label>
-            <select id="programme" name="programme" required><option value="" disabled selected>Select a group</option>{site.programmeOptions.map(option => <option value={option}>{option}</option>)}</select>
+            <fieldset class="programme-choices" aria-describedby="programme-hint">
+              <legend>Who is interested in training?</legend>
+              <p id="programme-hint">Choose all that apply.</p>
+              <div class="programme-options">
+                {site.programmeOptions.map((option, index) => <label class="programme-choice" for={`programme-${index}`}><input id={`programme-${index}`} type="checkbox" name="programmes" value={option} /><span>{index === 3 ? 'Not sure yet' : option}</span></label>)}
+              </div>
+            </fieldset>
+            <label for="comment">Anything you’d like us to know? <span>(optional)</span></label>
+            <textarea id="comment" name="comment" rows="4" maxlength="2000" aria-describedby="comment-hint" placeholder="Questions, training interests or a good time to contact you."></textarea>
+            <p id="comment-hint" class="form-privacy">Please leave out children’s names and any medical or sensitive personal details.</p>
             <label class="consent"><input type="checkbox" name="consent" value="opening-updates-email-phone" required /><span>I’d like opening news and class information by email, phone or text. I can withdraw at any time.</span></label>
             <p class="form-privacy">We’ll use these details for academy opening updates. Read our <a href="/privacy/">privacy notice</a>.</p>
             <button class="button button-light" type="submit">Register interest <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></button>
@@ -91,9 +100,19 @@ const weekends = timetable.days.filter(day => day.kind === 'weekend');
     const status = document.querySelector<HTMLParagraphElement>('#form-status');
     const button = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
     if (form && status && button) {
+      const choices = [...form.querySelectorAll<HTMLInputElement>('[name="programmes"]')];
+      const unsure = 'More than one / not sure yet';
+      for (const choice of choices) choice.addEventListener('change', () => {
+        if (choice.checked) {
+          for (const other of choices) if (other !== choice && (choice.value === unsure || other.value === unsure)) other.checked = false;
+        }
+        choices[0]?.setCustomValidity('');
+      });
       form.addEventListener('submit', async event => {
         event.preventDefault();
-        if (button.disabled || !form.reportValidity()) return;
+        if (button.disabled) return;
+        choices[0]?.setCustomValidity(choices.some(choice => choice.checked) ? '' : 'Choose at least one group, or select Not sure yet.');
+        if (!form.reportValidity()) return;
         const original = button.innerHTML;
         const body = encodeSubmission(new FormData(form));
         button.disabled = true;
@@ -116,9 +135,7 @@ const weekends = timetable.days.filter(day => day.kind === 'weekend');
           form.reset();
           const id = form.querySelector<HTMLInputElement>('[name="submissionId"]');
           if (id) { id.value = crypto.randomUUID(); id.defaultValue = id.value; }
-          status.textContent = 'Thank you. Your interest has been registered. We’ll be in touch with opening and class information.';
-          status.dataset.state = 'success';
-          status.focus();
+          window.location.assign('/thanks/?registered=1');
         } catch {
           status.textContent = rejectionMessage
             ? `${rejectionMessage} Your details are still in the form.`

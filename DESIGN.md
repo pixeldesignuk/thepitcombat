@@ -35,6 +35,11 @@ typography:
     fontWeight: 800
     lineHeight: 1.02
     letterSpacing: "-0.035em"
+  confirmation-title:
+    fontFamily: "Syne, sans-serif"
+    fontSize: "clamp(44px, 6.5vw, 88px)"
+    fontWeight: 800
+    lineHeight: 1.02
   headline:
     fontFamily: "Syne, sans-serif"
     fontSize: "clamp(34px, 4.15vw, 56px)"
@@ -150,9 +155,13 @@ Use straight rules and square field corners. Content sits in open rows rather th
 - **Discipline disclosure:** native `details`/`summary`, separated by thin rules. The plus rotates 45 degrees when expanded. Supporting copy aligns beneath the descriptive column on desktop and beneath the title on mobile.
 - **Timetable:** a light surface with ruled definition-list rows and tabular times. The provisional label is a small rectangular outlined status, not an interactive chip.
 - **Fields:** full-width dark inputs and native select, 52px minimum height, 1px grey border and visible labels. Disabled fields use 0.7 opacity. Consent uses a native 18px checkbox with the red accent.
-- **Registration states:** the form collects an adult name, email, phone, training group and contact consent. Native validation precedes submission; sending disables the button, changes its label and sets `aria-busy`. Success resets the form and focuses a polite live status. Server-validation errors explain what to correct; network errors preserve values and support retry. Native POST to `/api/registrations` redirects to `/thanks/?registered=1` after the API saves the registration. Missing optional operator details do not disable collection.
+- **Registration states:** the form collects an adult name, email, phone, one or more training groups, an optional comment and contact consent. A two-column checkbox group allows Kids, Teens and Adults together; Not sure yet is exclusive. At 360px it stacks into one column. The comment uses the existing square dark field styling and a 2,000-character limit. Native validation precedes submission; sending disables the button, changes its label and sets `aria-busy`. Success resets the form and navigates to `/thanks/?registered=1`; inline status is reserved for errors. Server-validation errors explain what to correct; network errors preserve values and support retry. Native POST to `/api/registrations` redirects to `/thanks/?registered=1` after the API saves the registration. Missing optional operator details do not disable collection.
 
 - **FAQ:** native ruled disclosures extend the discipline pattern, with Archivo 600 questions at 18px (16px mobile), 16px answers (14px mobile), an inherited Syne section heading and a plus rotating 45 degrees. The five answers cover confirmed monthly unlimited prices, free first session, disciplines, weekends and no-commitment interest registration.
+
+## Interest confirmation
+
+The dedicated `/thanks/` page extends the existing public identity: a red SVG check, large Syne “YOU’RE ON THE LIST.” heading, clear saved-interest copy and a first-session-free reminder. Open ruled sections separate confirmation from the Instagram and TikTok links supplied by the user. Desktop uses two columns; at 760px it stacks. It does not claim a class booking or email delivery. A direct visit without the success flag offers registration instead of claiming success. Social links live in `site.json` and identify that they open in a new tab.
 
 ## Registration inbox
 
@@ -162,7 +171,7 @@ Console tokens in `apps/web/dash/src/styles.css` are near-black `#080808` backgr
 
 The login view is a centered, restrained panel with the supplied logo, Syne title, concise access copy, labeled email and password fields, and a full-width red sign-in action. It has no background watermark. Session restoration and loading are explicit; rejected sign-in and session-expiry messages use `role="alert"`; save confirmations use `role="status"`. Focus-visible controls receive a 2px red outline with a 3px offset, native labels and semantics remain intact, loading and disabled controls communicate their state, and `prefers-reduced-motion` removes animation and transitions.
 
-Staff land on Expressions of interest. Search, programme and follow-up status filters lead into dense selectable rows with name, email, programme, status and received date. The adjacent detail panel provides email and phone actions, follow-up status, confirmation state, staff note, editable submitted contact details, save and discard actions, and last-updated metadata. Dates use tabular numerals and London time. At 760px and below, selecting a record hides the list and opens a focused full-width detail view with an explicit “Back to interests” action; the same rail/list/detail treatment applies to Staff accounts. Empty, filtered-empty, loading skeleton, network/error, validation, saving and saved states are represented in the interface. The application renders API data only and contains no fabricated rows.
+Staff land on Expressions of interest. Search, programme and follow-up status filters lead into dense selectable rows with name, email, programme, status and received date. The adjacent detail panel provides email and phone actions, follow-up status, confirmation state, a read-only visitor comment separate from staff notes, multi-select training groups, editable submitted contact details, save and discard actions, and last-updated metadata. Dates use tabular numerals and London time. At 760px and below, selecting a record hides the list and opens a focused full-width detail view with an explicit “Back to interests” action; the same rail/list/detail treatment applies to Staff accounts. Empty, filtered-empty, loading skeleton, network/error, validation, saving and saved states are represented in the interface. The application renders API data only and contains no fabricated rows.
 
 Administrators also see Staff accounts. The page uses the same ruled list and adjacent detail pattern to show role and active state, create an account, change role, activate/deactivate and reset a password. Staff never see this navigation item. Self-lockout and final-admin protections are explained in the UI and enforced by the service. Better Auth email/password sessions use secure HttpOnly cookies; seed setup provides configurable admin and staff users, with existing accounts preserved. Memberships, plans, billing and registration automation remain outside this surface.
 

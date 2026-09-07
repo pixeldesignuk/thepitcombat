@@ -1,12 +1,28 @@
 ---
 import Base from '../layouts/Base.astro';
+import '../styles/registration.css';
+import site from '../data/site.json';
 const registered = Astro.url.searchParams.get('registered') === '1';
+const socials = site.socials as { name: string; url: string }[];
 ---
-<Base title="Registration — The Pit Combat Academy">
-  <main id="main" class="prose wrap thanks">
-    <img src="/brand/mark.svg" alt="" width="96" height="70" />
-    <h1>{registered ? 'THANK YOU.' : 'STAY IN THE LOOP.'}</h1>
-    <p>{registered ? 'Your interest is registered. We’ll be in touch with opening news and class information. Your first session is free.' : 'Register your interest to hear about opening and classes.'}</p>
-    <a class="button button-light" href="/">Back to The Pit</a>
+<Base title={registered ? 'You’re on the list — The Pit Combat Academy' : 'Stay in the loop — The Pit Combat Academy'}>
+  <main id="main" class="confirmation wrap">
+    <div class="confirmation-heading">
+      {registered && <svg class="confirmation-check" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="m8 25 10 10L40 13" /></svg>}
+      <h1>{registered ? <>YOU’RE ON<br />THE LIST.</> : <>YOUR NEXT<br />CHAPTER.</>}</h1>
+    </div>
+    <div class="confirmation-copy">
+      <p class="confirmation-lead">{registered ? 'Your interest is registered. The next chapter starts with you.' : 'Register your interest to hear about opening and classes.'}</p>
+      <p>{registered ? 'Thanks for being part of the build-up to The Pit. We’ve saved your details and we’ll be in touch with opening news, class information and how to get started.' : 'Wrestling, MMA, Thai boxing and BJJ. Training for kids, teens and adults.'}</p>
+      <div class="confirmation-next">
+        <h2>YOUR FIRST SESSION IS FREE.</h2>
+        <p>No payment or commitment today. This is an expression of interest; we’ll share how to book when sessions are ready.</p>
+      </div>
+      <a class="button button-light" href={registered ? '/' : '/#register'}>{registered ? 'Back to The Pit' : 'Register interest'}<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+    </div>
+    {socials.length > 0 && <section class="confirmation-socials" aria-labelledby="follow-heading">
+      <div><h2 id="follow-heading">FOLLOW THE BUILD-UP.</h2><p>Stay close to The Pit. Follow us for the latest from the academy.</p></div>
+      <div class="social-links">{socials.map(social => <a href={social.url} target="_blank" rel="noopener noreferrer">{social.name}<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10" /></svg><span class="sr-only"> (opens in a new tab)</span></a>)}</div>
+    </section>}
   </main>
 </Base>

@@ -19,6 +19,8 @@ export type Interest = {
   email: string;
   phone: string;
   programme: Programme;
+  programmes: Programme[];
+  comment: string;
   createdAt: string;
   updatedAt: string;
   emailStatus: string | null;
@@ -31,4 +33,4 @@ export type StaffUser = SessionUser & {
   updatedAt: string;
 };
 
-export type InterestDraft = Pick<Interest, 'name' | 'email' | 'phone' | 'programme' | 'status' | 'staffNote'>;
+export type InterestDraft = Pick<Interest, 'name' | 'email' | 'phone' | 'programmes' | 'status' | 'staffNote'>;

@@ -117,7 +117,7 @@ export function InterestsPage({ signal, onSessionExpired }: { signal: AbortSigna
                 <li key={interest.id}>
                   <button className="interest-row" data-selected={selectedId === interest.id} type="button" onClick={() => setSelectedId(interest.id)} aria-label={`Open ${interest.name}`}>
                     <span className="interest-person"><strong>{interest.name}</strong><span>{interest.email}</span></span>
-                    <span className="interest-programme">{interest.programme}</span>
+                    <span className="interest-programme">{(interest.programmes ?? [interest.programme]).map(item => item === 'More than one / not sure yet' ? 'Not sure yet' : item).join(', ')}</span>
                     <span className="status-tag" data-status={interest.status}>{statusLabels[interest.status]}</span>
                     <time className="interest-date" dateTime={interest.createdAt}>{formatDate(interest.createdAt, true)}</time>
                     <Icon name="chevron" />
@@ -168,7 +168,7 @@ function InterestDetail({ id, signal, onClose, onUpdated, onSessionExpired }: { 
       .then(data => {
         if (!current) return;
         setInterest(data.interest);
-        setDraft({ name: data.interest.name, email: data.interest.email, phone: data.interest.phone, programme: data.interest.programme, status: data.interest.status, staffNote: data.interest.staffNote || '' });
+        setDraft({ name: data.interest.name, email: data.interest.email, phone: data.interest.phone, programmes: data.interest.programmes ?? [data.interest.programme], status: data.interest.status, staffNote: data.interest.staffNote || '' });
         window.requestAnimationFrame(() => headingRef.current?.focus());
       })
       .catch(cause => {
@@ -182,20 +182,21 @@ function InterestDetail({ id, signal, onClose, onUpdated, onSessionExpired }: { 
 
   const dirty = Boolean(interest && draft && (
     interest.name !== draft.name || interest.email !== draft.email || interest.phone !== draft.phone
-    || interest.programme !== draft.programme || interest.status !== draft.status
+    || JSON.stringify(interest.programmes) !== JSON.stringify(draft.programmes) || interest.status !== draft.status
     || (interest.staffNote || '') !== draft.staffNote
   ));
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!id || !draft || saving || !dirty) return;
+    if (draft.programmes.length === 0) { setError('Choose at least one training group.'); return; }
     setSaving(true); setError(''); setSuccess('');
     const saveId = id;
     try {
       const data = await apiRequest<{ interest: Interest }>(`/api/interests/${encodeURIComponent(id)}`, { method: 'PATCH', body: draft, signal });
       if (selectedIdRef.current !== saveId) return;
       setInterest(data.interest);
-      setDraft({ name: data.interest.name, email: data.interest.email, phone: data.interest.phone, programme: data.interest.programme, status: data.interest.status, staffNote: data.interest.staffNote || '' });
+      setDraft({ name: data.interest.name, email: data.interest.email, phone: data.interest.phone, programmes: data.interest.programmes ?? [data.interest.programme], status: data.interest.status, staffNote: data.interest.staffNote || '' });
       onUpdated(data.interest);
       setSuccess('Changes saved.');
     } catch (cause) {
@@ -225,6 +226,7 @@ function InterestDetail({ id, signal, onClose, onUpdated, onSessionExpired }: { 
             <a className="contact-action" href={`tel:${interest.phone}`}><Icon name="phone" /><span><strong>Call</strong><small>{interest.phone}</small></span></a>
           </div>
           {(error || success) && <p className={`notice ${error ? 'notice-error' : 'notice-success'}`} role={error ? 'alert' : 'status'}>{error || success}</p>}
+          {interest.comment && <section className="detail-section" aria-labelledby="visitor-comment-heading"><h3 id="visitor-comment-heading">Their comment</h3><p className="visitor-comment">{interest.comment}</p></section>}
           <section className="detail-section" aria-labelledby="follow-up-heading">
             <h3 id="follow-up-heading">Follow-up</h3>
             <div className="field-grid">
@@ -239,12 +241,16 @@ function InterestDetail({ id, signal, onClose, onUpdated, onSessionExpired }: { 
               <div className="field"><label htmlFor="interest-name">Name</label><input id="interest-name" value={draft.name} onChange={event => { setDraft({ ...draft, name: event.target.value }); setSuccess(''); }} minLength={2} maxLength={120} required disabled={saving} /></div>
               <div className="field"><label htmlFor="interest-email">Email</label><input id="interest-email" type="email" value={draft.email} onChange={event => { setDraft({ ...draft, email: event.target.value }); setSuccess(''); }} maxLength={254} required disabled={saving} /></div>
               <div className="field"><label htmlFor="interest-phone">Phone</label><input id="interest-phone" type="tel" value={draft.phone} onChange={event => { setDraft({ ...draft, phone: event.target.value }); setSuccess(''); }} required disabled={saving} /></div>
-              <div className="field"><label htmlFor="interest-programme">Programme</label><select id="interest-programme" value={draft.programme} onChange={event => { setDraft({ ...draft, programme: event.target.value as Programme }); setSuccess(''); }} disabled={saving}>{PROGRAMMES.map(item => <option value={item} key={item}>{item}</option>)}</select></div>
+              <fieldset className="field interest-groups"><legend>Training groups</legend>{PROGRAMMES.map(item => <label key={item}><input type="checkbox" checked={draft.programmes.includes(item)} disabled={saving} onChange={event => {
+                const unsure = 'More than one / not sure yet';
+                const programmes = event.target.checked ? (item === unsure ? [item] : [...draft.programmes.filter(value => value !== unsure), item]) : draft.programmes.filter(value => value !== item);
+                setDraft({ ...draft, programmes }); setSuccess('');
+              }} /><span>{item === 'More than one / not sure yet' ? 'Not sure yet' : item}</span></label>)}</fieldset>
             </div>
           </section>
           <footer className="detail-footer">
             <span>Last updated {formatDate(interest.updatedAt)}</span>
-            <button className="text-button" type="button" onClick={() => { setDraft({ name: interest.name, email: interest.email, phone: interest.phone, programme: interest.programme, status: interest.status, staffNote: interest.staffNote || '' }); setError(''); setSuccess(''); }} disabled={!dirty || saving}>Discard changes</button>
+            <button className="text-button" type="button" onClick={() => { setDraft({ name: interest.name, email: interest.email, phone: interest.phone, programmes: interest.programmes ?? [interest.programme], status: interest.status, staffNote: interest.staffNote || '' }); setError(''); setSuccess(''); }} disabled={!dirty || saving}>Discard changes</button>
           </footer>
         </form>
       ) : null}

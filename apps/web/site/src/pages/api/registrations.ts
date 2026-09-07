@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 
-const MAX_BYTES = 8192;
+const MAX_BYTES = 32 * 1024;
 export const POST: APIRoute = async ({ request }) => {
   const json = request.headers.get('accept')?.includes('application/json');
   const errorResponse = (message: string, status = 503) => json

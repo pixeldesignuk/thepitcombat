@@ -34,7 +34,7 @@ export function createInternalAuthenticator(authInternalUrl: string, request = f
 }
 
 export function createApp(options: { store: RegistrationStore; origins: string[]; consoleOrigins: string[]; authenticate: Authenticate; logger?: boolean }) {
-  const app = Fastify({ bodyLimit: 8192, logger: options.logger ?? false, disableRequestLogging: true });
+  const app = Fastify({ bodyLimit: 32768, logger: options.logger ?? false, disableRequestLogging: true });
   app.register(cors, { origin: options.origins, methods: ['GET', 'POST', 'PATCH'], allowedHeaders: ['Content-Type'] });
   app.register(formbody);
   app.setErrorHandler((error, request, reply) => {
@@ -66,7 +66,7 @@ export function createApp(options: { store: RegistrationStore; origins: string[]
   app.post('/v1/registrations', async (request, reply) => {
     if (request.headers.origin && !options.origins.includes(request.headers.origin)) return reply.code(403).send({ ok: false, message: 'This origin is not allowed.' });
     const parsed = registrationSchema.safeParse(request.body);
-    if (!parsed.success) return reply.code(400).send({ ok: false, message: 'Enter your name, a valid email and phone number, and agree to opening updates.', fields: parsed.error.flatten().fieldErrors });
+    if (!parsed.success) return reply.code(400).send({ ok: false, message: 'Enter your name, a valid email and phone number, choose training groups, and agree to opening updates.', fields: parsed.error.flatten().fieldErrors });
     if (parsed.data.website) return reply.code(400).send({ ok: false, message: 'We could not accept this submission.' });
     const result = await options.store.save(parsed.data);
     if (result === 'conflict') return reply.code(409).send({ ok: false, message: 'This submission was already used with different details. Refresh the page and try again.' });

@@ -29,6 +29,6 @@ Open http://localhost:5173. The dashboard’s `.env` holds `CONSOLE_URL`, `API_I
 
 The Node server provides the same origin proxy alongside the built Vite app. Set `CONSOLE_URL` to its exact public HTTPS origin, `API_INTERNAL_URL` to the private API address, and `AUTH_INTERNAL_URL` to the private auth address. These are runtime settings; no `VITE_API_URL` is needed. Session cookies are HttpOnly, with Secure enabled on HTTPS. API access is checked against the current auth session and role for every request.
 
-The interest workspace supports search, programme/status filters, pagination, contact edits, follow-up state and staff notes. Closing an interest record does not create or cancel a membership. The public interest form remains an expression of interest, not a class booking.
+The interest workspace supports search, programme/status filters, pagination, contact edits, multi-select training groups, read-only visitor comments, follow-up state and staff notes. Closing an interest record does not create or cancel a membership. The public interest form remains an expression of interest, not a class booking.
 
 See the root [Railway guide](../../../RAILWAY.md) for the shared infrastructure definition and deployment workflow.
