@@ -82,7 +82,7 @@ export function InterestsPage({ signal, onSessionExpired }: { signal: AbortSigna
               <span className="sr-only">Filter by programme</span>
               <select aria-label="Filter by programme" value={programme} onChange={event => { setProgramme(event.target.value as Programme | ''); setPage(1); }}>
                 <option value="">All programmes</option>
-                {PROGRAMMES.map(item => <option key={item} value={item}>{item}</option>)}
+                {PROGRAMMES.map(item => <option key={item} value={item}>{item === 'More than one / not sure yet' ? 'Not sure yet' : item}</option>)}
               </select>
             </label>
             <label className="select-label">
